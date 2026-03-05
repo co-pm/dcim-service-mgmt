@@ -1,7 +1,19 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import { Box, Card, CardContent, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
+import {
+  Box,
+  Card,
+  CardContent,
+  Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TableContainer,
+  Typography
+} from "@mui/material";
 
 type Asset = {
   id: string;
@@ -28,6 +40,7 @@ export default function AssetsPage() {
           {isLoading ? <Typography>Loading…</Typography> : null}
           {error ? <Typography color="error">Failed to load</Typography> : null}
 
+          <TableContainer>
           <Table>
             <TableHead>
               <TableRow>
@@ -41,15 +54,22 @@ export default function AssetsPage() {
             <TableBody>
               {(data ?? []).map((a) => (
                 <TableRow key={a.id}>
-                  <TableCell>{a.assetTag}</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>{a.assetTag}</TableCell>
                   <TableCell>{a.name}</TableCell>
                   <TableCell>{a.assetType}</TableCell>
-                  <TableCell>{a.ownerType}</TableCell>
+                  <TableCell>
+                    <Chip
+                      size="small"
+                      sx={{ bgcolor: a.ownerType === "INTERNAL" ? "#e8f1ff" : "#e7f8ee", color: "#1e3a8a", fontWeight: 700 }}
+                      label={a.ownerType.toLowerCase()}
+                    />
+                  </TableCell>
                   <TableCell>{a.location ?? "-"}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+          </TableContainer>
         </CardContent>
       </Card>
     </Box>

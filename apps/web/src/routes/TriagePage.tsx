@@ -13,8 +13,10 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableContainer,
   Typography
 } from "@mui/material";
+import { statusChipSx } from "../lib/ui";
 
 type Submission = {
   id: string;
@@ -66,6 +68,7 @@ export default function TriagePage() {
             </Alert>
           ) : null}
 
+          <TableContainer>
           <Table>
             <TableHead>
               <TableRow>
@@ -86,7 +89,7 @@ export default function TriagePage() {
                     <TableCell>{row.requesterEmail}</TableCell>
                     <TableCell>{row.subject}</TableCell>
                     <TableCell>
-                      <Chip size="small" label={row.status.toLowerCase()} />
+                      <Chip size="small" sx={statusChipSx(row.status)} label={row.status.toLowerCase()} />
                     </TableCell>
                     <TableCell>{new Date(row.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell align="right">
@@ -104,6 +107,7 @@ export default function TriagePage() {
               })}
             </TableBody>
           </Table>
+          </TableContainer>
         </CardContent>
       </Card>
     </Box>

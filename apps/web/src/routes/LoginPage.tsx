@@ -59,13 +59,18 @@ export default function LoginPage() {
         minHeight: "100vh",
         display: "grid",
         placeItems: "center",
-        p: 2
+        p: 2,
+        background:
+          "radial-gradient(circle at 15% 10%, rgba(37,99,235,0.14), transparent 35%), radial-gradient(circle at 85% 80%, rgba(15,118,110,0.12), transparent 40%)"
       }}
     >
-      <Card sx={{ width: 420 }}>
+      <Card sx={{ width: 440 }}>
         <CardContent>
-          <Typography variant="h5" sx={{ mb: 2 }}>
-            Sign in
+          <Typography variant="h5" sx={{ mb: 0.5 }}>
+            DC Service Mgmt
+          </Typography>
+          <Typography color="text.secondary" sx={{ mb: 2 }}>
+            Sign in to continue to operations control center.
           </Typography>
 
           <Box component="form" onSubmit={submit} sx={{ display: "grid", gap: 2 }}>
@@ -93,9 +98,9 @@ export default function LoginPage() {
 
           <Typography
             variant="caption"
-            sx={{ display: "block", mt: 2, opacity: 0.8 }}
+            sx={{ display: "block", mt: 2, color: "text.secondary" }}
           >
-            MVP uses email/password. SSO (OIDC / Azure AD) can be enabled later.
+            SSO (OIDC / Azure AD) can be enabled in the next phase.
           </Typography>
         </CardContent>
       </Card>

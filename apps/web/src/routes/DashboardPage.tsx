@@ -1,7 +1,8 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import { Box, Card, CardContent, Grid, Typography } from "@mui/material";
+import { Box, Card, CardContent, Grid, Stack, Typography } from "@mui/material";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 
 type SR = { id: string; status: string };
 type Asset = { id: string };
@@ -23,27 +24,34 @@ export default function DashboardPage() {
   const activeSurveys = (surveys.data ?? []).filter((x) => x.status !== "COMPLETED").length;
 
   const cards = [
-    { label: "Triage Inbox", value: triageInbox },
-    { label: "Open Tickets", value: openTickets },
-    { label: "Assets", value: assets.data?.length ?? 0 },
-    { label: "Degraded Assets", value: degradedAssets },
-    { label: "Active Surveys", value: activeSurveys }
+    { label: "Triage Inbox", value: triageInbox, tone: "#f59e0b" },
+    { label: "Open Tickets", value: openTickets, tone: "#2563eb" },
+    { label: "Assets", value: assets.data?.length ?? 0, tone: "#0f766e" },
+    { label: "Degraded Assets", value: degradedAssets, tone: "#dc2626" },
+    { label: "Active Surveys", value: activeSurveys, tone: "#7c3aed" }
   ];
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ mb: 2 }}>
+      <Typography variant="h4" sx={{ mb: 0.5 }}>
         Dashboard
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 2.5 }}>
+        Live operational pulse across service desk, infrastructure assets, and audits.
       </Typography>
       <Grid container spacing={2}>
         {cards.map((c) => (
           <Grid item xs={12} sm={6} md={2.4 as any} key={c.label}>
-            <Card>
+            <Card sx={{ overflow: "hidden" }}>
+              <Box sx={{ height: 4, bgcolor: c.tone }} />
               <CardContent>
-                <Typography variant="subtitle2" sx={{ opacity: 0.8 }}>
-                  {c.label}
-                </Typography>
-                <Typography variant="h3" sx={{ mt: 1 }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="subtitle2" sx={{ opacity: 0.8 }}>
+                    {c.label}
+                  </Typography>
+                  <TrendingUpIcon sx={{ color: c.tone, fontSize: 18 }} />
+                </Stack>
+                <Typography variant="h4" sx={{ mt: 1.2, fontWeight: 800 }}>
                   {c.value}
                 </Typography>
               </CardContent>
