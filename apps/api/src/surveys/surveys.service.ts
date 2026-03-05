@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { SurveyStatus } from "@prisma/client";
 
@@ -6,7 +6,12 @@ import { SurveyStatus } from "@prisma/client";
 export class SurveysService {
   constructor(private prisma: PrismaService) {}
 
+  private assertClientScope(clientId: string) {
+    if (!clientId) throw new ForbiddenException("Missing client scope");
+  }
+
   listForClient(clientId: string) {
+    this.assertClientScope(clientId);
     return this.prisma.survey.findMany({
       where: { clientId },
       orderBy: { updatedAt: "desc" },
@@ -15,6 +20,7 @@ export class SurveysService {
   }
 
   async createForClient(clientId: string, dto: any) {
+    this.assertClientScope(clientId);
     return this.prisma.survey.create({
       data: {
         clientId,
@@ -28,6 +34,7 @@ export class SurveysService {
   }
 
   async completeSurvey(clientId: string, surveyId: string) {
+    this.assertClientScope(clientId);
     const survey = await this.prisma.survey.findFirst({
       where: { id: surveyId, clientId },
       include: { items: true }
