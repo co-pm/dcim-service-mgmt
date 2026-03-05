@@ -24,6 +24,7 @@ import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import StorageIcon from "@mui/icons-material/Storage";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
+import ApartmentIcon from "@mui/icons-material/Apartment";
 import { revokeAndLogout } from "../lib/api";
 import { hasAnyRole, ROLES } from "../lib/rbac";
 
@@ -42,6 +43,7 @@ const items = [
   { label: "Tasks", path: "/tasks", icon: <TaskAltIcon />, roles: Object.values(ROLES) },
   { label: "Assets", path: "/assets", icon: <StorageIcon />, roles: Object.values(ROLES) },
   { label: "Surveys & Audits", path: "/surveys", icon: <FactCheckIcon />, roles: Object.values(ROLES) },
+  { label: "Clients", path: "/clients", icon: <ApartmentIcon />, roles: [ROLES.ADMIN] },
   { label: "Users", path: "/users", icon: <ManageAccountsIcon />, roles: [ROLES.ADMIN, ROLES.SERVICE_MANAGER] }
 ];
 

@@ -24,7 +24,7 @@ Date: 2026-03-05
 | Tasks | list/get: all internal roles incl CLIENT_VIEWER; create/status: ADMIN, SERVICE_MANAGER, SERVICE_DESK_ANALYST, ENGINEER | all authenticated roles | write actions hidden for unauthorized users |
 | Assets | list: all internal roles incl CLIENT_VIEWER; create: ADMIN, SERVICE_MANAGER, SERVICE_DESK_ANALYST, ENGINEER | all authenticated roles | create hidden for unauthorized users |
 | Surveys | list/get: all internal roles incl CLIENT_VIEWER; create/status/item update: ADMIN, SERVICE_MANAGER, SERVICE_DESK_ANALYST, ENGINEER | all authenticated roles | execution actions hidden for unauthorized users |
-| Clients | ADMIN | no dedicated UI page | admin-only API utility for scoped admin actions |
+| Clients | ADMIN | ADMIN | dedicated admin clients page for tenant onboarding and status updates |
 | Users | ADMIN, SERVICE_MANAGER | ADMIN, SERVICE_MANAGER | added in this change |
 
 ## Tenant Scope Notes
