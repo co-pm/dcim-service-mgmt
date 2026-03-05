@@ -5,13 +5,17 @@ import {
   Box,
   Button,
   Drawer,
+  IconButton,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
   Toolbar,
-  Typography
+  Typography,
+  useMediaQuery,
+  useTheme
 } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import InboxIcon from "@mui/icons-material/Inbox";
 import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
@@ -20,24 +24,34 @@ import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import StorageIcon from "@mui/icons-material/Storage";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import { revokeAndLogout } from "../lib/api";
+import { hasAnyRole, ROLES } from "../lib/rbac";
 
 const drawerWidth = 280;
 
 const items = [
-  { label: "Dashboard", path: "/", icon: <DashboardIcon /> },
-  { label: "Triage", path: "/triage", icon: <InboxIcon /> },
-  { label: "Service Requests", path: "/service-requests", icon: <ConfirmationNumberIcon /> },
-  { label: "Incidents", path: "/incidents", icon: <WarningAmberIcon /> },
-  { label: "Tasks", path: "/tasks", icon: <TaskAltIcon /> },
-  { label: "Assets", path: "/assets", icon: <StorageIcon /> },
-  { label: "Surveys & Audits", path: "/surveys", icon: <FactCheckIcon /> }
+  { label: "Dashboard", path: "/", icon: <DashboardIcon />, roles: Object.values(ROLES) },
+  {
+    label: "Triage",
+    path: "/triage",
+    icon: <InboxIcon />,
+    roles: [ROLES.ADMIN, ROLES.SERVICE_MANAGER, ROLES.SERVICE_DESK_ANALYST]
+  },
+  { label: "Service Requests", path: "/service-requests", icon: <ConfirmationNumberIcon />, roles: Object.values(ROLES) },
+  { label: "Incidents", path: "/incidents", icon: <WarningAmberIcon />, roles: Object.values(ROLES) },
+  { label: "Tasks", path: "/tasks", icon: <TaskAltIcon />, roles: Object.values(ROLES) },
+  { label: "Assets", path: "/assets", icon: <StorageIcon />, roles: Object.values(ROLES) },
+  { label: "Surveys & Audits", path: "/surveys", icon: <FactCheckIcon />, roles: Object.values(ROLES) }
 ];
 
 export default function Shell() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const nav = useNavigate();
   const loc = useLocation();
   const [loggingOut, setLoggingOut] = useState(false);
-  const active = items.find((x) => x.path === loc.pathname)?.label ?? "Workspace";
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const visibleItems = items.filter((item) => hasAnyRole(item.roles));
+  const active = visibleItems.find((x) => x.path === loc.pathname)?.label ?? "Workspace";
 
   async function onLogout() {
     if (loggingOut) return;
@@ -45,6 +59,52 @@ export default function Shell() {
     await revokeAndLogout();
     setLoggingOut(false);
   }
+
+  function navigateTo(path: string) {
+    nav(path);
+    setMobileOpen(false);
+  }
+
+  const navContent = (
+    <>
+      <Toolbar sx={{ minHeight: 72 }}>
+        <Box>
+          <Typography variant="h6" sx={{ color: "#f8fafc", lineHeight: 1.1 }}>
+            DC Service Mgmt
+          </Typography>
+          <Typography variant="caption" sx={{ color: "#93c5fd" }}>
+            Control Center
+          </Typography>
+        </Box>
+      </Toolbar>
+      <Box sx={{ overflow: "auto" }}>
+        <List sx={{ px: 1.5, py: 1 }}>
+          {visibleItems.map((it) => (
+            <ListItemButton
+              key={it.path}
+              selected={loc.pathname === it.path}
+              onClick={() => navigateTo(it.path)}
+              sx={{
+                borderRadius: 2,
+                mb: 0.5,
+                color: "#dbe7ff",
+                "& .MuiListItemIcon-root": { color: "#93c5fd", minWidth: 36 },
+                "&.Mui-selected": {
+                  bgcolor: "rgba(59,130,246,0.2)",
+                  color: "#ffffff",
+                  "& .MuiListItemIcon-root": { color: "#bfdbfe" }
+                },
+                "&.Mui-selected:hover": { bgcolor: "rgba(59,130,246,0.28)" }
+              }}
+            >
+              <ListItemIcon>{it.icon}</ListItemIcon>
+              <ListItemText primary={it.label} primaryTypographyProps={{ fontWeight: 600 }} />
+            </ListItemButton>
+          ))}
+        </List>
+      </Box>
+    </>
+  );
 
   return (
     <Box sx={{ display: "flex" }}>
@@ -60,6 +120,11 @@ export default function Shell() {
         }}
       >
         <Toolbar sx={{ minHeight: 72 }}>
+          {isMobile ? (
+            <IconButton color="inherit" onClick={() => setMobileOpen(true)} sx={{ mr: 1 }}>
+              <MenuIcon />
+            </IconButton>
+          ) : null}
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, color: "#1e293b" }}>
             {active}
           </Typography>
@@ -70,7 +135,9 @@ export default function Shell() {
       </AppBar>
 
       <Drawer
-        variant="permanent"
+        variant={isMobile ? "temporary" : "permanent"}
+        open={isMobile ? mobileOpen : true}
+        onClose={() => setMobileOpen(false)}
         sx={{
           width: drawerWidth,
           flexShrink: 0,
@@ -83,45 +150,10 @@ export default function Shell() {
           }
         }}
       >
-        <Toolbar sx={{ minHeight: 72 }}>
-          <Box>
-            <Typography variant="h6" sx={{ color: "#f8fafc", lineHeight: 1.1 }}>
-              DC Service Mgmt
-            </Typography>
-            <Typography variant="caption" sx={{ color: "#93c5fd" }}>
-              Control Center
-            </Typography>
-          </Box>
-        </Toolbar>
-        <Box sx={{ overflow: "auto" }}>
-          <List sx={{ px: 1.5, py: 1 }}>
-            {items.map((it) => (
-              <ListItemButton
-                key={it.path}
-                selected={loc.pathname === it.path}
-                onClick={() => nav(it.path)}
-                sx={{
-                  borderRadius: 2,
-                  mb: 0.5,
-                  color: "#dbe7ff",
-                  "& .MuiListItemIcon-root": { color: "#93c5fd", minWidth: 36 },
-                  "&.Mui-selected": {
-                    bgcolor: "rgba(59,130,246,0.2)",
-                    color: "#ffffff",
-                    "& .MuiListItemIcon-root": { color: "#bfdbfe" }
-                  },
-                  "&.Mui-selected:hover": { bgcolor: "rgba(59,130,246,0.28)" }
-                }}
-              >
-                <ListItemIcon>{it.icon}</ListItemIcon>
-                <ListItemText primary={it.label} primaryTypographyProps={{ fontWeight: 600 }} />
-              </ListItemButton>
-            ))}
-          </List>
-        </Box>
+        {navContent}
       </Drawer>
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box component="main" sx={{ flexGrow: 1, p: { xs: 1.5, md: 3 } }}>
         <Toolbar sx={{ minHeight: 72 }} />
         <Outlet />
       </Box>

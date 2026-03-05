@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { statusChipSx } from "../lib/ui";
+import { EmptyState, ErrorState, LoadingState } from "../components/PageState";
 
 type Survey = {
   id: string;
@@ -41,11 +42,14 @@ export default function SurveysPage() {
       </Typography>
       <Card>
         <CardContent>
-          {isLoading ? <Typography>Loading…</Typography> : null}
-          {error ? <Typography color="error">Failed to load</Typography> : null}
+          {isLoading ? <LoadingState /> : null}
+          {error ? <ErrorState title="Failed to load surveys" /> : null}
+          {!isLoading && !error && (data?.length ?? 0) === 0 ? (
+            <EmptyState title="No surveys yet" detail="Create or schedule audits to begin survey execution." />
+          ) : null}
 
           <TableContainer>
-          <Table>
+          <Table sx={{ minWidth: 820 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Title</TableCell>

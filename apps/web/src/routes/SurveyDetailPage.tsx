@@ -21,6 +21,8 @@ import {
   Typography
 } from "@mui/material";
 import { statusChipSx } from "../lib/ui";
+import { hasAnyRole, ROLES } from "../lib/rbac";
+import { ErrorState, LoadingState } from "../components/PageState";
 
 type SurveyItem = {
   id: string;
@@ -38,6 +40,7 @@ type Survey = {
 };
 
 export default function SurveyDetailPage() {
+  const canManage = hasAnyRole([ROLES.ADMIN, ROLES.SERVICE_MANAGER, ROLES.SERVICE_DESK_ANALYST, ROLES.ENGINEER]);
   const { id } = useParams();
   const qc = useQueryClient();
   const [newLabel, setNewLabel] = useState("");
@@ -114,9 +117,14 @@ export default function SurveyDetailPage() {
         Execute checklist responses with controlled lifecycle transitions.
       </Typography>
 
-      {isLoading ? <Typography>Loading…</Typography> : null}
-      {error ? <Alert severity="error">Failed to load survey</Alert> : null}
+      {isLoading ? <LoadingState /> : null}
+      {error ? <ErrorState title="Failed to load survey details" /> : null}
       {mutationErrorMessage ? <Alert severity="error" sx={{ mb: 2 }}>{mutationErrorMessage}</Alert> : null}
+      {!canManage ? (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          You have read-only access to this survey.
+        </Alert>
+      ) : null}
 
       {data ? (
         <Stack spacing={2}>
@@ -140,14 +148,14 @@ export default function SurveyDetailPage() {
                 <Button
                   variant="outlined"
                   onClick={() => start.mutate()}
-                  disabled={data.status !== "DRAFT" || start.isPending}
+                  disabled={!canManage || data.status !== "DRAFT" || start.isPending}
                 >
                   Start Survey
                 </Button>
                 <Button
                   variant="contained"
                   onClick={() => complete.mutate()}
-                  disabled={data.status === "COMPLETED" || complete.isPending}
+                  disabled={!canManage || data.status === "COMPLETED" || complete.isPending}
                 >
                   Complete Survey
                 </Button>
@@ -159,19 +167,19 @@ export default function SurveyDetailPage() {
                   fullWidth
                   value={newLabel}
                   onChange={(e) => setNewLabel(e.target.value)}
-                  disabled={data.status === "COMPLETED"}
+                  disabled={!canManage || data.status === "COMPLETED"}
                 />
                 <Button
                   variant="outlined"
                   onClick={() => addItem.mutate()}
-                  disabled={!newLabel.trim() || data.status === "COMPLETED" || addItem.isPending}
+                  disabled={!canManage || !newLabel.trim() || data.status === "COMPLETED" || addItem.isPending}
                 >
                   Add Item
                 </Button>
               </Stack>
 
               <TableContainer>
-              <Table>
+              <Table sx={{ minWidth: 900 }}>
                 <TableHead>
                   <TableRow>
                     <TableCell>Checklist Item</TableCell>
@@ -190,7 +198,7 @@ export default function SurveyDetailPage() {
                           size="small"
                           fullWidth
                           value={item.draftResponse}
-                          disabled={data.status === "COMPLETED"}
+                          disabled={!canManage || data.status === "COMPLETED"}
                           onChange={(e) =>
                             setDrafts((prev) => ({
                               ...prev,
@@ -212,7 +220,7 @@ export default function SurveyDetailPage() {
                           size="small"
                           fullWidth
                           value={item.draftNotes}
-                          disabled={data.status === "COMPLETED"}
+                          disabled={!canManage || data.status === "COMPLETED"}
                           onChange={(e) =>
                             setDrafts((prev) => ({
                               ...prev,
@@ -228,7 +236,7 @@ export default function SurveyDetailPage() {
                         <Button
                           size="small"
                           variant="outlined"
-                          disabled={data.status === "COMPLETED" || updateItem.isPending}
+                          disabled={!canManage || data.status === "COMPLETED" || updateItem.isPending}
                           onClick={() =>
                             updateItem.mutate({
                               itemId: item.id,

@@ -14,6 +14,7 @@ import {
   TableContainer,
   Typography
 } from "@mui/material";
+import { EmptyState, ErrorState, LoadingState } from "../components/PageState";
 
 type Asset = {
   id: string;
@@ -37,11 +38,14 @@ export default function AssetsPage() {
       </Typography>
       <Card>
         <CardContent>
-          {isLoading ? <Typography>Loading…</Typography> : null}
-          {error ? <Typography color="error">Failed to load</Typography> : null}
+          {isLoading ? <LoadingState /> : null}
+          {error ? <ErrorState title="Failed to load assets" /> : null}
+          {!isLoading && !error && (data?.length ?? 0) === 0 ? (
+            <EmptyState title="No assets found" detail="Assets will appear once inventory is onboarded." />
+          ) : null}
 
           <TableContainer>
-          <Table>
+          <Table sx={{ minWidth: 700 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Asset Tag</TableCell>

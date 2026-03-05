@@ -15,6 +15,7 @@ import {
   Typography
 } from "@mui/material";
 import { priorityChipSx, statusChipSx } from "../lib/ui";
+import { EmptyState, ErrorState, LoadingState } from "../components/PageState";
 
 type SR = {
   id: string;
@@ -38,11 +39,17 @@ export default function ServiceRequestsPage() {
       </Typography>
       <Card>
         <CardContent>
-          {isLoading ? <Typography>Loading…</Typography> : null}
-          {error ? <Typography color="error">Failed to load</Typography> : null}
+          {isLoading ? <LoadingState /> : null}
+          {error ? <ErrorState title="Failed to load service requests" /> : null}
+          {!isLoading && !error && (data?.length ?? 0) === 0 ? (
+            <EmptyState
+              title="No service requests yet"
+              detail="New tickets will appear here when submitted or converted from triage."
+            />
+          ) : null}
 
           <TableContainer>
-          <Table>
+          <Table sx={{ minWidth: 760 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Ticket</TableCell>

@@ -17,6 +17,8 @@ import {
   Typography
 } from "@mui/material";
 import { statusChipSx } from "../lib/ui";
+import { EmptyState, ErrorState, LoadingState } from "../components/PageState";
+import { hasAnyRole, ROLES } from "../lib/rbac";
 
 type Submission = {
   id: string;
@@ -29,6 +31,7 @@ type Submission = {
 };
 
 export default function TriagePage() {
+  const canManage = hasAnyRole([ROLES.ADMIN, ROLES.SERVICE_MANAGER, ROLES.SERVICE_DESK_ANALYST]);
   const qc = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
@@ -60,16 +63,19 @@ export default function TriagePage() {
       </Typography>
       <Card>
         <CardContent>
-          {isLoading ? <Typography>Loading…</Typography> : null}
-          {error ? <Typography color="error">Failed to load triage inbox</Typography> : null}
+          {isLoading ? <LoadingState /> : null}
+          {error ? <ErrorState title="Failed to load triage inbox" /> : null}
           {convertError ? (
             <Alert severity="error" sx={{ mb: 2 }}>
               {convertErrorMessage ?? "Failed to convert submission"}
             </Alert>
           ) : null}
+          {!isLoading && !error && (data?.length ?? 0) === 0 ? (
+            <EmptyState title="Triage inbox is clear" detail="No pending public submissions at the moment." />
+          ) : null}
 
           <TableContainer>
-          <Table>
+          <Table sx={{ minWidth: 880 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Requester</TableCell>
@@ -96,7 +102,7 @@ export default function TriagePage() {
                       <Button
                         size="small"
                         variant="contained"
-                        disabled={!canConvert || convert.isPending}
+                        disabled={!canManage || !canConvert || convert.isPending}
                         onClick={() => convert.mutate(row.id)}
                       >
                         {canConvert ? "Convert" : "Converted"}

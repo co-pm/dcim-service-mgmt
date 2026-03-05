@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { getToken } from "../lib/auth";
 import { setAuthToken } from "../lib/api";
+import { hasAnyRole, ROLES } from "../lib/rbac";
 import LoginPage from "./LoginPage";
 import Shell from "./Shell";
 import DashboardPage from "./DashboardPage";
@@ -16,6 +17,11 @@ import SurveyDetailPage from "./SurveyDetailPage";
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const token = getToken();
   if (!token) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+
+function RequireRoles({ roles, children }: { roles: string[]; children: React.ReactNode }) {
+  if (!hasAnyRole(roles)) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
@@ -34,7 +40,14 @@ export default function App() {
         }
       >
         <Route index element={<DashboardPage />} />
-        <Route path="triage" element={<TriagePage />} />
+        <Route
+          path="triage"
+          element={
+            <RequireRoles roles={[ROLES.ADMIN, ROLES.SERVICE_MANAGER, ROLES.SERVICE_DESK_ANALYST]}>
+              <TriagePage />
+            </RequireRoles>
+          }
+        />
         <Route path="service-requests" element={<ServiceRequestsPage />} />
         <Route path="incidents" element={<IncidentsPage />} />
         <Route path="tasks" element={<TasksPage />} />

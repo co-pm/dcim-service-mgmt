@@ -9,7 +9,7 @@ import {
   Alert
 } from "@mui/material";
 import { api, setAuthToken, type ApiError, type LoginResponse } from "../lib/api";
-import { setToken } from "../lib/auth";
+import { setSession } from "../lib/auth";
 import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
@@ -35,8 +35,7 @@ export default function LoginPage() {
       });
 
       const token = res.data.accessToken;
-
-      setToken(token);
+      setSession(token, res.data.user);
       setAuthToken(token);
 
       navigate("/", { replace: true });

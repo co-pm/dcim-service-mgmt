@@ -20,6 +20,8 @@ import {
   Typography
 } from "@mui/material";
 import { priorityChipSx, statusChipSx } from "../lib/ui";
+import { EmptyState, ErrorState, LoadingState } from "../components/PageState";
+import { hasAnyRole, ROLES } from "../lib/rbac";
 
 type Incident = {
   id: string;
@@ -34,6 +36,7 @@ type Incident = {
 const statusOptions = ["NEW", "INVESTIGATING", "MITIGATED", "RESOLVED", "CLOSED"];
 
 export default function IncidentsPage() {
+  const canManage = hasAnyRole([ROLES.ADMIN, ROLES.SERVICE_MANAGER, ROLES.SERVICE_DESK_ANALYST, ROLES.ENGINEER]);
   const qc = useQueryClient();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -87,6 +90,7 @@ export default function IncidentsPage() {
         Major operational issues with controlled lifecycle and severity tracking.
       </Typography>
 
+      {canManage ? (
       <Card sx={{ mb: 2 }}>
         <CardContent>
           <Stack direction={{ xs: "column", md: "row" }} spacing={1.2}>
@@ -121,15 +125,19 @@ export default function IncidentsPage() {
           </Stack>
         </CardContent>
       </Card>
+      ) : null}
 
       <Card>
         <CardContent>
-          {isLoading ? <Typography>Loading…</Typography> : null}
-          {error ? <Alert severity="error">Failed to load incidents</Alert> : null}
+          {isLoading ? <LoadingState /> : null}
+          {error ? <ErrorState title="Failed to load incidents" /> : null}
           {mutationErrorMessage ? <Alert severity="error" sx={{ mb: 2 }}>{mutationErrorMessage}</Alert> : null}
+          {!isLoading && !error && (data?.length ?? 0) === 0 ? (
+            <EmptyState title="No incidents yet" detail="Create incidents to track active operational disruptions." />
+          ) : null}
 
           <TableContainer>
-            <Table>
+            <Table sx={{ minWidth: 980 }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Reference</TableCell>
@@ -164,6 +172,7 @@ export default function IncidentsPage() {
                             select
                             size="small"
                             value={selected}
+                            disabled={!canManage}
                             sx={{ minWidth: 150 }}
                             onChange={(e) => setDraftStatus((prev) => ({ ...prev, [inc.id]: e.target.value }))}
                           >
@@ -176,7 +185,7 @@ export default function IncidentsPage() {
                           <Button
                             size="small"
                             variant="outlined"
-                            disabled={selected === inc.status || updateStatus.isPending}
+                            disabled={!canManage || selected === inc.status || updateStatus.isPending}
                             onClick={() => updateStatus.mutate({ id: inc.id, status: selected })}
                           >
                             Save

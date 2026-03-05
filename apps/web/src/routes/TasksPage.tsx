@@ -20,6 +20,8 @@ import {
   Typography
 } from "@mui/material";
 import { priorityChipSx, statusChipSx } from "../lib/ui";
+import { EmptyState, ErrorState, LoadingState } from "../components/PageState";
+import { hasAnyRole, ROLES } from "../lib/rbac";
 
 type IncidentOption = { id: string; reference: string; title: string };
 
@@ -36,6 +38,7 @@ type Task = {
 const statusOptions = ["OPEN", "IN_PROGRESS", "BLOCKED", "DONE"];
 
 export default function TasksPage() {
+  const canManage = hasAnyRole([ROLES.ADMIN, ROLES.SERVICE_MANAGER, ROLES.SERVICE_DESK_ANALYST, ROLES.ENGINEER]);
   const qc = useQueryClient();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -99,6 +102,7 @@ export default function TasksPage() {
         Actionable work items linked to operations and incident response.
       </Typography>
 
+      {canManage ? (
       <Card sx={{ mb: 2 }}>
         <CardContent>
           <Stack direction={{ xs: "column", md: "row" }} spacing={1.2}>
@@ -138,15 +142,19 @@ export default function TasksPage() {
           </Stack>
         </CardContent>
       </Card>
+      ) : null}
 
       <Card>
         <CardContent>
-          {tasks.isLoading ? <Typography>Loading…</Typography> : null}
-          {tasks.error ? <Alert severity="error">Failed to load tasks</Alert> : null}
+          {tasks.isLoading ? <LoadingState /> : null}
+          {tasks.error ? <ErrorState title="Failed to load tasks" /> : null}
           {mutationErrorMessage ? <Alert severity="error" sx={{ mb: 2 }}>{mutationErrorMessage}</Alert> : null}
+          {!tasks.isLoading && !tasks.error && (tasks.data?.length ?? 0) === 0 ? (
+            <EmptyState title="No tasks yet" detail="Create work items to coordinate operations and incident response." />
+          ) : null}
 
           <TableContainer>
-            <Table>
+            <Table sx={{ minWidth: 980 }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Title</TableCell>
@@ -179,6 +187,7 @@ export default function TasksPage() {
                             select
                             size="small"
                             value={selected}
+                            disabled={!canManage}
                             sx={{ minWidth: 150 }}
                             onChange={(e) => setDraftStatus((prev) => ({ ...prev, [task.id]: e.target.value }))}
                           >
@@ -191,7 +200,7 @@ export default function TasksPage() {
                           <Button
                             size="small"
                             variant="outlined"
-                            disabled={selected === task.status || updateStatus.isPending}
+                            disabled={!canManage || selected === task.status || updateStatus.isPending}
                             onClick={() => updateStatus.mutate({ id: task.id, status: selected })}
                           >
                             Save

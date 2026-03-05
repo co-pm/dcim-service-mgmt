@@ -1,5 +1,5 @@
 import axios, { AxiosError, type AxiosRequestConfig, type InternalAxiosRequestConfig } from "axios";
-import { clearToken, getToken, setToken } from "./auth";
+import { clearSession, getToken, setSession } from "./auth";
 
 const baseURL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
@@ -37,7 +37,7 @@ export function getAuthToken(): string | null {
 }
 
 export function logout() {
-  clearToken();
+  clearSession();
   setAuthToken(null);
 }
 
@@ -62,7 +62,7 @@ async function tryRefreshAccessToken(): Promise<string | null> {
       const token = res.data?.accessToken;
       if (!token) return null;
 
-      setToken(token);
+      setSession(token);
       setAuthToken(token);
       return token;
     } catch {
