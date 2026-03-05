@@ -12,9 +12,11 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableContainer,
   Typography
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { statusChipSx } from "../lib/ui";
 
 type Survey = {
   id: string;
@@ -42,6 +44,7 @@ export default function SurveysPage() {
           {isLoading ? <Typography>Loading…</Typography> : null}
           {error ? <Typography color="error">Failed to load</Typography> : null}
 
+          <TableContainer>
           <Table>
             <TableHead>
               <TableRow>
@@ -56,9 +59,11 @@ export default function SurveysPage() {
             <TableBody>
               {(data ?? []).map((s) => (
                 <TableRow key={s.id}>
-                  <TableCell>{s.title}</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>{s.title}</TableCell>
                   <TableCell>{s.surveyType}</TableCell>
-                  <TableCell><Chip size="small" label={s.status.toLowerCase().replaceAll("_"," ")} /></TableCell>
+                  <TableCell>
+                    <Chip size="small" sx={statusChipSx(s.status)} label={s.status.toLowerCase().replaceAll("_"," ")} />
+                  </TableCell>
                   <TableCell>{s.scheduledAt ? new Date(s.scheduledAt).toLocaleDateString() : "-"}</TableCell>
                   <TableCell>{s.items?.length ?? 0}</TableCell>
                   <TableCell align="right">
@@ -70,6 +75,7 @@ export default function SurveysPage() {
               ))}
             </TableBody>
           </Table>
+          </TableContainer>
         </CardContent>
       </Card>
     </Box>

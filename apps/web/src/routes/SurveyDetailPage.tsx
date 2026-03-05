@@ -16,9 +16,11 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableContainer,
   TextField,
   Typography
 } from "@mui/material";
+import { statusChipSx } from "../lib/ui";
 
 type SurveyItem = {
   id: string;
@@ -105,8 +107,11 @@ export default function SurveyDetailPage() {
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ mb: 2 }}>
+      <Typography variant="h4" sx={{ mb: 0.5 }}>
         Survey Execution
+      </Typography>
+      <Typography color="text.secondary" sx={{ mb: 2 }}>
+        Execute checklist responses with controlled lifecycle transitions.
       </Typography>
 
       {isLoading ? <Typography>Loading…</Typography> : null}
@@ -124,7 +129,7 @@ export default function SurveyDetailPage() {
                     {data.surveyType}
                   </Typography>
                 </Box>
-                <Chip label={data.status.toLowerCase().replaceAll("_", " ")} />
+                <Chip sx={statusChipSx(data.status)} label={data.status.toLowerCase().replaceAll("_", " ")} />
               </Stack>
             </CardContent>
           </Card>
@@ -165,6 +170,7 @@ export default function SurveyDetailPage() {
                 </Button>
               </Stack>
 
+              <TableContainer>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -238,6 +244,7 @@ export default function SurveyDetailPage() {
                   ))}
                 </TableBody>
               </Table>
+              </TableContainer>
             </CardContent>
           </Card>
         </Stack>
