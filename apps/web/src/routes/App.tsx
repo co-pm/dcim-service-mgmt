@@ -13,6 +13,7 @@ import TasksPage from "./TasksPage";
 import AssetsPage from "./AssetsPage";
 import SurveysPage from "./SurveysPage";
 import SurveyDetailPage from "./SurveyDetailPage";
+import UsersPage from "./UsersPage";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const token = getToken();
@@ -54,6 +55,14 @@ export default function App() {
         <Route path="assets" element={<AssetsPage />} />
         <Route path="surveys" element={<SurveysPage />} />
         <Route path="surveys/:id" element={<SurveyDetailPage />} />
+        <Route
+          path="users"
+          element={
+            <RequireRoles roles={[ROLES.ADMIN, ROLES.SERVICE_MANAGER]}>
+              <UsersPage />
+            </RequireRoles>
+          }
+        />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

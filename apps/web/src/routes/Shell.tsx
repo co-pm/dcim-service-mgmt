@@ -23,6 +23,7 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import StorageIcon from "@mui/icons-material/Storage";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
+import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import { revokeAndLogout } from "../lib/api";
 import { hasAnyRole, ROLES } from "../lib/rbac";
 
@@ -40,7 +41,8 @@ const items = [
   { label: "Incidents", path: "/incidents", icon: <WarningAmberIcon />, roles: Object.values(ROLES) },
   { label: "Tasks", path: "/tasks", icon: <TaskAltIcon />, roles: Object.values(ROLES) },
   { label: "Assets", path: "/assets", icon: <StorageIcon />, roles: Object.values(ROLES) },
-  { label: "Surveys & Audits", path: "/surveys", icon: <FactCheckIcon />, roles: Object.values(ROLES) }
+  { label: "Surveys & Audits", path: "/surveys", icon: <FactCheckIcon />, roles: Object.values(ROLES) },
+  { label: "Users", path: "/users", icon: <ManageAccountsIcon />, roles: [ROLES.ADMIN, ROLES.SERVICE_MANAGER] }
 ];
 
 export default function Shell() {

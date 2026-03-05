@@ -11,6 +11,7 @@ import { HealthController } from "./health/health.controller";
 import { PublicSubmissionsModule } from "./public-submissions/public-submissions.module";
 import { IncidentsModule } from "./incidents/incidents.module";
 import { TasksModule } from "./tasks/tasks.module";
+import { UsersModule } from "./users/users.module";
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import { TasksModule } from "./tasks/tasks.module";
     DocumentsModule,
     PublicSubmissionsModule,
     IncidentsModule,
-    TasksModule
+    TasksModule,
+    UsersModule
   ],
   controllers: [HealthController]
 })
