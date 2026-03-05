@@ -8,6 +8,7 @@ import { SurveysModule } from "./surveys/surveys.module";
 import { DocumentsModule } from "./documents/documents.module";
 import { StorageModule } from "./storage/storage.module";
 import { HealthController } from "./health/health.controller";
+import { PublicSubmissionsModule } from "./public-submissions/public-submissions.module";
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { HealthController } from "./health/health.controller";
     ServiceRequestsModule,
     AssetsModule,
     SurveysModule,
-    DocumentsModule
+    DocumentsModule,
+    PublicSubmissionsModule
   ],
   controllers: [HealthController]
 })

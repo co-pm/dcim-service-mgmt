@@ -117,6 +117,45 @@ async function main() {
     });
   }
 
+  // 6) Public submissions for triage inbox (idempotent by requesterEmail + subject + client)
+  const triageSamples = [
+    {
+      requesterName: "Alex Turner",
+      requesterEmail: "alex.turner@novalogistics.example",
+      subject: "Intermittent rack access badge failure",
+      description: "Badge readers in zone B2 fail intermittently for on-call engineers."
+    },
+    {
+      requesterName: "Priya Shah",
+      requesterEmail: "priya.shah@novalogistics.example",
+      subject: "Cooling alert in aisle 4",
+      description: "Temperature spikes observed overnight; request urgent triage."
+    }
+  ];
+
+  for (const sample of triageSamples) {
+    const existing = await prisma.publicSubmission.findFirst({
+      where: {
+        clientId: clientA.id,
+        requesterEmail: sample.requesterEmail,
+        subject: sample.subject
+      }
+    });
+
+    if (!existing) {
+      await prisma.publicSubmission.create({
+        data: {
+          clientId: clientA.id,
+          requesterName: sample.requesterName,
+          requesterEmail: sample.requesterEmail,
+          subject: sample.subject,
+          description: sample.description,
+          status: "NEW"
+        }
+      });
+    }
+  }
+
   console.log("Seed complete:", {
     clientA: clientA.id,
     admin: admin.email,

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AppBar, Box, Button, Drawer, List, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
+import InboxIcon from "@mui/icons-material/Inbox";
 import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
 import StorageIcon from "@mui/icons-material/Storage";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
@@ -11,6 +12,7 @@ const drawerWidth = 280;
 
 const items = [
   { label: "Dashboard", path: "/", icon: <DashboardIcon /> },
+  { label: "Triage", path: "/triage", icon: <InboxIcon /> },
   { label: "Service Requests", path: "/service-requests", icon: <ConfirmationNumberIcon /> },
   { label: "Assets", path: "/assets", icon: <StorageIcon /> },
   { label: "Surveys & Audits", path: "/surveys", icon: <FactCheckIcon /> }
