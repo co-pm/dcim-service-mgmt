@@ -67,6 +67,8 @@ enum TaskStatus {
 
 model Client {
   id        String   @id @default(uuid())
+  organizationId String?
+  organization Organization? @relation(fields: [organizationId], references: [id])
   name      String
   status    String   @default("ACTIVE")
   createdAt DateTime @default(now())
@@ -82,6 +84,17 @@ model Client {
   documents DocumentReference[]
 }
 
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clients   Client[]
+  users     User[]
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -89,6 +102,8 @@ model User {
   refreshTokenHash String?
   refreshTokenExpiresAt DateTime?
   role         Role
+  organizationId String?
+  organization Organization? @relation(fields: [organizationId], references: [id])
   clientId     String?
   client       Client?  @relation(fields: [clientId], references: [id])
   isActive     Boolean  @default(true)

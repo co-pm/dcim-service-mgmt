@@ -5,6 +5,7 @@ export type JwtUser = {
   userId: string;
   email: string;
   role: Role;
+  organizationId?: string | null;
   clientId?: string | null;
 };
 

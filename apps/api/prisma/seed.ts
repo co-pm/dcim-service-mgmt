@@ -13,7 +13,29 @@ import * as bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  // 1) Client (stable by name)
+  // 1) Organization (stable by name)
+  const orgName = "DCMS Default Organization";
+  const organization = await prisma.organization.upsert({
+    where: { id: "00000000-0000-0000-0000-000000000001" },
+    update: { name: orgName, status: "ACTIVE" },
+    create: {
+      id: "00000000-0000-0000-0000-000000000001",
+      name: orgName,
+      status: "ACTIVE"
+    }
+  });
+
+  // Backfill existing clients/users without organization to default org.
+  await prisma.client.updateMany({
+    where: { organizationId: null },
+    data: { organizationId: organization.id }
+  });
+  await prisma.user.updateMany({
+    where: { organizationId: null },
+    data: { organizationId: organization.id }
+  });
+
+  // 2) Client (stable by name)
   const existingClient = await prisma.client.findFirst({
     where: { name: "Nova Logistics" }
   });
@@ -21,24 +43,34 @@ async function main() {
   const clientA =
     existingClient ??
     (await prisma.client.create({
-      data: { name: "Nova Logistics", status: "ACTIVE" }
+      data: { name: "Nova Logistics", status: "ACTIVE", organizationId: organization.id }
     }));
+  if (clientA.organizationId !== organization.id) {
+    await prisma.client.update({
+      where: { id: clientA.id },
+      data: { organizationId: organization.id }
+    });
+  }
 
-  // 2) Admin user (stable by email)
+  // 3) Admin user (stable by email)
   const adminEmail = "admin@dcm.local";
   const admin = await prisma.user.upsert({
     where: { email: adminEmail },
-    update: {},
+    update: {
+      organizationId: organization.id,
+      clientId: clientA.id
+    },
     create: {
       email: adminEmail,
       passwordHash: await bcrypt.hash("Admin123!", 10),
       role: Role.ADMIN,
+      organizationId: organization.id,
       clientId: clientA.id,
       isActive: true
     }
   });
 
-  // 3) Service Requests (idempotent by fixed references)
+  // 4) Service Requests (idempotent by fixed references)
   const sr1Ref = "SR-2026-0001";
   const sr2Ref = "SR-2026-0002";
 
@@ -78,7 +110,7 @@ async function main() {
     });
   }
 
-  // 4) Assets (assumes assetTag is unique; skipDuplicates prevents repeats)
+  // 5) Assets (assumes assetTag is unique; skipDuplicates prevents repeats)
   await prisma.asset.createMany({
     data: [
       {
@@ -99,7 +131,7 @@ async function main() {
     skipDuplicates: true
   });
 
-  // 5) Survey (idempotent by (clientId + title))
+  // 6) Survey (idempotent by (clientId + title))
   const surveyTitle = "Q1 2026 Facility Walkthrough";
 
   let survey = await prisma.survey.findFirst({
@@ -126,7 +158,7 @@ async function main() {
     });
   }
 
-  // 6) Public submissions for triage inbox (idempotent by requesterEmail + subject + client)
+  // 7) Public submissions for triage inbox (idempotent by requesterEmail + subject + client)
   const triageSamples = [
     {
       requesterName: "Alex Turner",
@@ -165,7 +197,7 @@ async function main() {
     }
   }
 
-  // 7) Incidents (idempotent by reference + client)
+  // 8) Incidents (idempotent by reference + client)
   const inc1Ref = "IN-2026-0001";
   const inc2Ref = "IN-2026-0002";
 
@@ -209,7 +241,7 @@ async function main() {
     });
   }
 
-  // 8) Tasks (idempotent by title + client)
+  // 9) Tasks (idempotent by title + client)
   const taskSamples = [
     {
       title: "Validate switch firmware integrity",
@@ -248,6 +280,7 @@ async function main() {
   }
 
   console.log("Seed complete:", {
+    organization: organization.id,
     clientA: clientA.id,
     admin: admin.email,
     survey: survey.id
