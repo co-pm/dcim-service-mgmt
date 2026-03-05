@@ -5,6 +5,7 @@ export type CurrentUser = {
   userId: string;
   email: string;
   role: string;
+  organizationId: string | null;
   clientId: string | null;
 };
 
@@ -33,7 +34,15 @@ export function getCurrentUser(): CurrentUser | null {
   if (!raw) return inferUserFromToken(getToken());
 
   try {
-    return JSON.parse(raw) as CurrentUser;
+    const parsed = JSON.parse(raw) as Partial<CurrentUser>;
+    if (!parsed.userId || !parsed.role) return inferUserFromToken(getToken());
+    return {
+      userId: parsed.userId,
+      email: parsed.email ?? "",
+      role: parsed.role,
+      organizationId: parsed.organizationId ?? null,
+      clientId: parsed.clientId ?? null
+    };
   } catch {
     return inferUserFromToken(getToken());
   }
@@ -62,6 +71,7 @@ function inferUserFromToken(token: string | null): CurrentUser | null {
       userId: payload.userId,
       email: payload.email ?? "",
       role: payload.role,
+      organizationId: payload.organizationId ?? null,
       clientId: payload.clientId ?? null
     };
   } catch {

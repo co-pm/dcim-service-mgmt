@@ -22,16 +22,29 @@ export class AuthService {
     return envInt("JWT_REFRESH_TTL_SECONDS", 604800);
   }
 
-  private buildPayload(user: { id: string; email: string; role: Role; clientId: string | null }) {
+  private buildPayload(user: {
+    id: string;
+    email: string;
+    role: Role;
+    organizationId: string | null;
+    clientId: string | null;
+  }) {
     return {
       userId: user.id,
       email: user.email,
       role: user.role as Role,
+      organizationId: user.organizationId,
       clientId: user.clientId
     };
   }
 
-  private async issueTokenPair(payload: { userId: string; email: string; role: Role; clientId: string | null }) {
+  private async issueTokenPair(payload: {
+    userId: string;
+    email: string;
+    role: Role;
+    organizationId: string | null;
+    clientId: string | null;
+  }) {
     const accessToken = await this.jwt.signAsync(payload, {
       secret: process.env.JWT_SECRET,
       expiresIn: this.accessTtlSeconds()
@@ -73,7 +86,13 @@ export class AuthService {
   async refresh(refreshToken: string) {
     if (!refreshToken) throw new UnauthorizedException("Missing refresh token");
 
-    let payload: { userId: string; email: string; role: Role; clientId: string | null };
+    let payload: {
+      userId: string;
+      email: string;
+      role: Role;
+      organizationId: string | null;
+      clientId: string | null;
+    };
     try {
       payload = await this.jwt.verifyAsync(refreshToken, {
         secret: process.env.JWT_REFRESH_SECRET

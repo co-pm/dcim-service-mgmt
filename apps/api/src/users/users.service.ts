@@ -21,6 +21,7 @@ export class UsersService {
     id: string;
     email: string;
     role: Role;
+    organizationId: string | null;
     clientId: string | null;
     isActive: boolean;
     createdAt: Date;
@@ -30,6 +31,7 @@ export class UsersService {
       id: user.id,
       email: user.email,
       role: user.role,
+      organizationId: user.organizationId,
       clientId: user.clientId,
       isActive: user.isActive,
       createdAt: user.createdAt,
@@ -54,9 +56,13 @@ export class UsersService {
     }
   }
 
-  private resolveTargetClientId(actor: JwtUser, requestedClientId?: string | null) {
+  private async resolveTargetClientId(actor: JwtUser, requestedClientId?: string | null) {
     if (actor.role === Role.ADMIN) {
-      return requestedClientId ?? actor.clientId ?? null;
+      const organizationId = await this.requireOrganizationScope(actor);
+      const candidate = requestedClientId ?? actor.clientId ?? null;
+      if (!candidate) return null;
+      await this.assertClientInOrganization(candidate, organizationId);
+      return candidate;
     }
 
     if (!actor.clientId) {
@@ -70,15 +76,39 @@ export class UsersService {
     return actor.clientId;
   }
 
-  private async assertClientExists(clientId: string | null) {
-    if (!clientId) return;
-    const client = await this.prisma.client.findUnique({ where: { id: clientId }, select: { id: true } });
-    if (!client) throw new BadRequestException("Invalid clientId");
+  private async requireOrganizationScope(actor: JwtUser) {
+    if (actor.organizationId) return actor.organizationId;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: actor.userId },
+      select: { organizationId: true }
+    });
+    if (!user?.organizationId) {
+      throw new ForbiddenException("Missing organization scope");
+    }
+    return user.organizationId;
+  }
+
+  private async assertClientInOrganization(clientId: string, organizationId: string) {
+    const client = await this.prisma.client.findUnique({
+      where: { id: clientId },
+      select: { id: true, organizationId: true }
+    });
+    if (!client || client.organizationId !== organizationId) {
+      throw new BadRequestException("Invalid clientId for organization scope.");
+    }
   }
 
   async list(actor: JwtUser, requestedClientId?: string) {
-    const clientId = this.resolveTargetClientId(actor, requestedClientId ?? null);
-    const where: Prisma.UserWhereInput = clientId ? { clientId } : {};
+    const clientId = await this.resolveTargetClientId(actor, requestedClientId ?? null);
+    const where: Prisma.UserWhereInput = {};
+
+    if (actor.role === Role.ADMIN) {
+      where.organizationId = await this.requireOrganizationScope(actor);
+      if (clientId) where.clientId = clientId;
+    } else if (clientId) {
+      where.clientId = clientId;
+    }
 
     const users = await this.prisma.user.findMany({
       where,
@@ -87,6 +117,7 @@ export class UsersService {
         id: true,
         email: true,
         role: true,
+        organizationId: true,
         clientId: true,
         isActive: true,
         createdAt: true,
@@ -100,11 +131,14 @@ export class UsersService {
   async create(actor: JwtUser, dto: CreateUserDto) {
     this.assertCanAssignRole(actor, dto.role);
 
-    const clientId = this.resolveTargetClientId(actor, dto.clientId ?? null);
+    const clientId = await this.resolveTargetClientId(actor, dto.clientId ?? null);
+    const organizationId = await this.requireOrganizationScope(actor);
     if (dto.role !== Role.ADMIN && !clientId) {
       throw new BadRequestException("clientId is required for non-admin roles.");
     }
-    await this.assertClientExists(clientId);
+    if (!organizationId) {
+      throw new ForbiddenException("Missing organization scope");
+    }
 
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email.toLowerCase() } });
     if (existing) throw new ConflictException("User with this email already exists");
@@ -116,6 +150,7 @@ export class UsersService {
         email: dto.email.toLowerCase(),
         passwordHash,
         role: dto.role,
+        organizationId,
         clientId,
         isActive: dto.isActive ?? true
       },
@@ -123,6 +158,7 @@ export class UsersService {
         id: true,
         email: true,
         role: true,
+        organizationId: true,
         clientId: true,
         isActive: true,
         createdAt: true,
@@ -137,8 +173,11 @@ export class UsersService {
     const target = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!target) throw new NotFoundException("User not found");
 
-    const actorScope = this.resolveTargetClientId(actor, target.clientId);
-    if (target.clientId !== actorScope) {
+    const actorOrgId = await this.requireOrganizationScope(actor);
+    if (target.organizationId !== actorOrgId) {
+      throw new ForbiddenException("Cross-organization user management is not allowed.");
+    }
+    if (actor.role !== Role.ADMIN && target.clientId !== actor.clientId) {
       throw new ForbiddenException("Cross-client user management is not allowed.");
     }
 
@@ -148,12 +187,11 @@ export class UsersService {
       this.assertCanAssignRole(actor, target.role);
     }
 
-    const nextClientId = this.resolveTargetClientId(actor, dto.clientId ?? target.clientId ?? null);
+    const nextClientId = await this.resolveTargetClientId(actor, dto.clientId ?? target.clientId ?? null);
     const nextRole = dto.role ?? target.role;
     if (nextRole !== Role.ADMIN && !nextClientId) {
       throw new BadRequestException("clientId is required for non-admin roles.");
     }
-    await this.assertClientExists(nextClientId);
 
     if (target.id === actor.userId && dto.isActive === false) {
       throw new BadRequestException("You cannot deactivate your own account.");
@@ -179,6 +217,7 @@ export class UsersService {
         id: true,
         email: true,
         role: true,
+        organizationId: true,
         clientId: true,
         isActive: true,
         createdAt: true,

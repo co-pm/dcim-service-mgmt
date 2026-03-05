@@ -18,6 +18,7 @@ export type LoginResponse = {
     userId: string;
     email: string;
     role: string;
+    organizationId: string | null;
     clientId: string | null;
   };
 };
