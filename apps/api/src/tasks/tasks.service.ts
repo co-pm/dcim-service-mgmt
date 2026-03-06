@@ -2,6 +2,12 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { PrismaService } from "../prisma/prisma.service";
 import { TaskStatus } from "@prisma/client";
 
+type ListFilters = {
+  dateFrom?: string;
+  dateTo?: string;
+  assigneeId?: string;
+};
+
 @Injectable()
 export class TasksService {
   constructor(private prisma: PrismaService) {}
@@ -10,17 +16,39 @@ export class TasksService {
     if (!clientId) throw new ForbiddenException("Missing client scope");
   }
 
-  async listForClient(clientId: string) {
+  async listForClient(clientId: string, filters: ListFilters = {}) {
     this.assertClientScope(clientId);
+    const createdAt = this.getCreatedAtRange(filters.dateFrom, filters.dateTo);
     return this.prisma.task.findMany({
-      where: { clientId },
+      where: {
+        clientId,
+        assigneeId: filters.assigneeId || undefined,
+        createdAt
+      },
       orderBy: { updatedAt: "desc" },
       include: {
+        assignee: {
+          select: { id: true, email: true }
+        },
         incident: {
           select: { id: true, reference: true, title: true }
         }
       }
     });
+  }
+
+  async exportCsvForClient(clientId: string, filters: ListFilters = {}) {
+    const rows = await this.listForClient(clientId, filters);
+    return rows.map((task) => ({
+      title: task.title,
+      status: task.status,
+      priority: task.priority,
+      assignee: task.assignee?.email ?? "",
+      incidentReference: task.incident?.reference ?? "",
+      dueAt: task.dueAt ? task.dueAt.toISOString() : "",
+      createdAt: task.createdAt.toISOString(),
+      updatedAt: task.updatedAt.toISOString()
+    }));
   }
 
   async getForClient(clientId: string, id: string) {
@@ -99,5 +127,24 @@ export class TasksService {
     });
 
     return updated;
+  }
+
+  private getCreatedAtRange(dateFrom?: string, dateTo?: string) {
+    if (!dateFrom && !dateTo) return undefined;
+
+    return {
+      gte: dateFrom ? this.parseDate(dateFrom, "start") : undefined,
+      lte: dateTo ? this.parseDate(dateTo, "end") : undefined
+    };
+  }
+
+  private parseDate(value: string, boundary: "start" | "end") {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return undefined;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      if (boundary === "start") date.setUTCHours(0, 0, 0, 0);
+      else date.setUTCHours(23, 59, 59, 999);
+    }
+    return date;
   }
 }
