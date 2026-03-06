@@ -35,9 +35,9 @@ export class AssetsService {
 
   async create(dto: any, requesterClientId: string, requesterRole: Role) {
     if (!requesterClientId) throw new ForbiddenException("Missing client scope");
+    const targetClientId = dto.clientId ?? requesterClientId;
 
-    if (dto.ownerType === OwnerType.CLIENT && !dto.clientId) {
-      // If owner=CLIENT, must link to a client
+    if (dto.ownerType === OwnerType.CLIENT && !targetClientId) {
       throw new BadRequestException("clientId is required when ownerType is CLIENT.");
     }
 
@@ -45,7 +45,7 @@ export class AssetsService {
     if (
       !isOrgSuperRole(requesterRole) &&
       dto.ownerType === OwnerType.CLIENT &&
-      dto.clientId !== requesterClientId
+      targetClientId !== requesterClientId
     ) {
       throw new ForbiddenException("Cannot create client-owned asset for a different client.");
     }
@@ -61,9 +61,28 @@ export class AssetsService {
         name: dto.name,
         assetType: dto.assetType,
         ownerType: dto.ownerType,
-        clientId: dto.ownerType === OwnerType.CLIENT ? dto.clientId : null,
+        clientId: dto.ownerType === OwnerType.CLIENT ? targetClientId : null,
         location: dto.location
       }
     });
+  }
+
+  async removeForClient(assetId: string, requesterClientId: string, requesterRole: Role) {
+    if (!requesterClientId) throw new ForbiddenException("Missing client scope");
+
+    const asset = await this.prisma.asset.findUnique({
+      where: { id: assetId }
+    });
+    if (!asset) throw new BadRequestException("Asset not found.");
+
+    if (!isOrgSuperRole(requesterRole)) {
+      if (asset.ownerType !== OwnerType.CLIENT || asset.clientId !== requesterClientId) {
+        throw new ForbiddenException("Cannot delete assets outside your client scope.");
+      }
+    } else if (asset.ownerType === OwnerType.CLIENT && asset.clientId !== requesterClientId) {
+      throw new ForbiddenException("Selected scope does not match this client-owned asset.");
+    }
+
+    return this.prisma.asset.delete({ where: { id: asset.id } });
   }
 }
