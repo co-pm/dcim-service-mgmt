@@ -117,4 +117,11 @@ export class SurveysService {
       data: { status: SurveyStatus.COMPLETED }
     });
   }
+
+  async deleteForClient(clientId: string, surveyId: string) {
+    const survey = await this.getForClient(clientId, surveyId);
+    return this.prisma.survey.delete({
+      where: { id: survey.id }
+    });
+  }
 }
