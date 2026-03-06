@@ -38,7 +38,7 @@ export default function DashboardPage() {
 
   const cards = [
     { label: "Triage Inbox", value: triageInbox, tone: "#f59e0b" },
-    { label: "Open Tickets", value: openTickets, tone: "#2563eb" },
+    { label: "Open Service Requests", value: openTickets, tone: "#2563eb" },
     { label: "Open Incidents", value: openIncidents, tone: "#dc2626" },
     { label: "Open Tasks", value: openTasks, tone: "#0f766e" },
     { label: "Assets", value: assets.data?.length ?? 0, tone: "#0f766e" },
