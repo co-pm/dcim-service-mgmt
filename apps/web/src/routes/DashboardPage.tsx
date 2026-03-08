@@ -64,6 +64,36 @@ type TrendMetric = {
   tone: string;
 };
 
+const filterChipSx = {
+  height: 32,
+  borderRadius: "999px",
+  border: "1px solid #bfdbfe",
+  bgcolor: "rgba(239, 246, 255, 0.95)",
+  color: "#1e3a8a",
+  fontWeight: 600,
+  "& .MuiChip-icon": { color: "#2563eb" },
+  "& .MuiChip-label": { px: 1.25 },
+  transition: "all 180ms ease",
+  "&:hover": {
+    borderColor: "#93c5fd",
+    bgcolor: "rgba(219, 234, 254, 0.95)"
+  }
+} as const;
+
+const helperChipSx = {
+  height: 30,
+  borderRadius: "999px",
+  borderColor: "#cbd5e1",
+  color: "#334155",
+  bgcolor: "#ffffff",
+  "& .MuiChip-label": { px: 1.1, fontWeight: 600 },
+  transition: "all 180ms ease",
+  "&:hover": {
+    borderColor: "#94a3b8",
+    bgcolor: "#f8fafc"
+  }
+} as const;
+
 function formatDateForInput(date: Date) {
   return date.toISOString().slice(0, 10);
 }
@@ -380,12 +410,12 @@ export default function DashboardPage() {
               icon={<FilterAltIcon />}
               label={`Period: ${formatDateForLabel(dateFrom)} to ${formatDateForLabel(dateTo)}`}
               size="small"
-              sx={{ bgcolor: "#eef2ff", border: "1px solid #c7d2fe" }}
+              sx={filterChipSx}
             />
             <Chip
               label={`Assignee: ${selectedAssigneeLabel}`}
               size="small"
-              sx={{ bgcolor: "#f1f5f9", border: "1px solid #cbd5e1" }}
+              sx={filterChipSx}
             />
           </Stack>
         </CardContent>
@@ -402,7 +432,7 @@ export default function DashboardPage() {
               Trend Snapshot
             </Typography>
             <Tooltip title="Opened is counted by created date. Resolved is counted by latest status date within the selected period.">
-              <Chip label="How this works" size="small" variant="outlined" />
+              <Chip label="How this works" size="small" variant="outlined" sx={helperChipSx} />
             </Tooltip>
           </Stack>
 
