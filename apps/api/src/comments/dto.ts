@@ -1,4 +1,4 @@
-import { IsIn, IsString, IsUUID, MinLength } from "class-validator"
+import { IsBoolean, IsIn, IsOptional, IsString, IsUUID, MinLength } from "class-validator"
 
 export class CreateCommentDto {
   @IsString()
@@ -11,4 +11,14 @@ export class CreateCommentDto {
   @IsString()
   @MinLength(1)
   body!: string
+
+  @IsOptional()
+  @IsUUID()
+  serviceRequestId?: string
+}
+
+export class CreateCustomerUpdateDto extends CreateCommentDto {
+  @IsOptional()
+  @IsBoolean()
+  fromCustomer?: boolean
 }
