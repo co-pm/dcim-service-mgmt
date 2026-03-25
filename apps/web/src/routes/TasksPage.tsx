@@ -301,7 +301,7 @@ export default function TasksPage() {
   const qc = useQueryClient()
   const [viewMode, setViewMode] = React.useState<"board" | "table">("table")
   const [createOpen, setCreateOpen] = React.useState(false)
-  const [filterStatus, setFilterStatus] = React.useState("ALL")
+  const [filterStatus, setFilterStatus] = React.useState("OPEN")
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["tasks"],
@@ -414,9 +414,9 @@ export default function TasksPage() {
           <Box sx={{ borderBottom: "1px solid #e2e8f0", px: 2 }}>
             <Tabs value={filterStatus} onChange={(_, v) => setFilterStatus(v)}
               variant="scrollable" scrollButtons="auto" sx={{ minHeight: 44 }}>
-              {[{ value: "ALL", label: "All" }, ...COLUMNS.map((c) => ({
+              {[...COLUMNS.map((c) => ({
                 value: c.status, label: c.label
-              }))].map((tab) => {
+              })), { value: "ALL", label: "All" }].map((tab) => {
                 const count = tab.value === "ALL"
                   ? tasks.length
                   : tasks.filter((t) => t.status === tab.value).length
@@ -426,7 +426,7 @@ export default function TasksPage() {
                     label={
                       <Stack direction="row" spacing={0.75} alignItems="center">
                         <span>{tab.label}</span>
-                        {count > 0 ? (
+                        {(count > 0 && tab.value !== "ALL") ? (
                           <Box sx={{
                             bgcolor: filterStatus === tab.value ? "#1d4ed8" : "#e2e8f0",
                             color: filterStatus === tab.value ? "#fff" : "#475569",
@@ -437,7 +437,7 @@ export default function TasksPage() {
                           </Box>
                         ) : null}
                       </Stack>
-                    }
+                  }
                   />
                 )
               })}

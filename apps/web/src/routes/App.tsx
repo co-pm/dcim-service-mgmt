@@ -1,48 +1,41 @@
-import React, { useEffect } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
-import { getToken } from "../lib/auth";
-import { setAuthToken } from "../lib/api";
-import { hasAnyRole, ORG_SUPER_ROLES, ROLES } from "../lib/rbac";
-import LoginPage from "./LoginPage";
-import Shell from "./Shell";
-import DashboardPage from "./DashboardPage";
-import TriagePage from "./TriagePage";
-import RaiseRequestPage from "./RaiseRequestPage";
-import ServiceRequestsPage from "./ServiceRequestsPage";
-import IncidentsPage from "./IncidentsPage";
-import TasksPage from "./TasksPage";
-import AssetsPage from "./AssetsPage";
-import SurveysPage from "./SurveysPage";
-import SurveyDetailPage from "./SurveyDetailPage";
-import AuditTrailPage from "./AuditTrailPage";
-import UsersPage from "./UsersPage";
-import ClientsPage from "./ClientsPage";
-import SitesPage from "./SitesPage"
-import ChangesPage from "./ChangesPage"
-import RisksPage from "./RisksPage"
-import IssuesPage from "./IssuesPage"
-import WorkPackagesPage from "./WorkPackagesPage"
+import React, { useEffect } from "react"
+import { Navigate, Route, Routes } from "react-router-dom"
+import { getToken } from "../lib/auth"
+import { setAuthToken } from "../lib/api"
+import { hasAnyRole, ORG_SUPER_ROLES, ROLES } from "../lib/rbac"
+import LoginPage from "./LoginPage"
+import Shell from "./Shell"
+import DashboardPage from "./DashboardPage"
+import ServiceDeskPage from "./ServiceDeskPage"
 import ServiceRequestDetailPage from "./ServiceRequestDetailPage"
-import ChangeDetailPage from "./ChangeDetailPage"
+import TasksPage from "./TasksPage"
+import TaskDetailPage from "./TaskDetailPage"
+import RisksIssuesPage from "./RisksIssuesPage"
 import RiskDetailPage from "./RiskDetailPage"
 import IssueDetailPage from "./IssueDetailPage"
-import ServiceDeskPage from "./ServiceDeskPage"
-import TaskDetailPage from "./TaskDetailPage"
-import SiteDetailPage from "./SiteDetailPage";
+import SitesPage from "./SitesPage"
+import SiteDetailPage from "./SiteDetailPage"
+import SurveysPage from "./SurveysPage"
+import SurveyDetailPage from "./SurveyDetailPage"
+import WorkPackagesPage from "./WorkPackagesPage"
+import AssetsPage from "./AssetsPage"
+import AuditTrailPage from "./AuditTrailPage"
+import UsersPage from "./UsersPage"
+import ClientsPage from "./ClientsPage"
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  const token = getToken();
-  if (!token) return <Navigate to="/login" replace />;
-  return <>{children}</>;
+  const token = getToken()
+  if (!token) return <Navigate to="/login" replace />
+  return <>{children}</>
 }
 
 function RequireRoles({ roles, children }: { roles: string[]; children: React.ReactNode }) {
-  if (!hasAnyRole(roles)) return <Navigate to="/" replace />;
-  return <>{children}</>;
+  if (!hasAnyRole(roles)) return <Navigate to="/" replace />
+  return <>{children}</>
 }
 
 export default function App() {
-  useEffect(() => setAuthToken(getToken()), []);
+  useEffect(() => setAuthToken(getToken()), [])
 
   return (
     <Routes>
@@ -56,27 +49,38 @@ export default function App() {
         }
       >
         <Route index element={<DashboardPage />} />
+
+        {/* Redirects for old routes */}
         <Route path="raise-request" element={<Navigate to="/service-desk" replace />} />
         <Route path="triage" element={<Navigate to="/service-desk" replace />} />
-        <Route path="service-requests" element={<ServiceRequestsPage />} />
+        <Route path="service-requests" element={<Navigate to="/service-desk" replace />} />
+
+        {/* Service desk */}
+        <Route path="service-desk" element={<ServiceDeskPage />} />
         <Route path="service-requests/:id" element={<ServiceRequestDetailPage />} />
-        <Route path="incidents" element={<IncidentsPage />} />
+
+        {/* Tasks */}
         <Route path="tasks" element={<TasksPage />} />
         <Route path="tasks/:id" element={<TaskDetailPage />} />
-        <Route path="assets" element={<AssetsPage />} />
-        <Route path="surveys" element={<SurveysPage />} />
-        <Route path="audit" element={<AuditTrailPage />} />
-        <Route path="surveys/:id" element={<SurveyDetailPage />} />
-        <Route path="sites" element={<SitesPage />} />
-        <Route path="sites/:id" element={<SiteDetailPage />} />
-        <Route path="changes" element={<ChangesPage />} />
-        <Route path="changes/:id" element={<ChangeDetailPage />} />
-        <Route path="risks" element={<RisksPage />} />
-        <Route path="issues" element={<IssuesPage />} />
-        <Route path="work-packages" element={<WorkPackagesPage />} />
+
+        {/* Risks & Issues */}
+        <Route path="risks" element={<RisksIssuesPage />} />
+        <Route path="issues" element={<RisksIssuesPage />} />
         <Route path="risks/:id" element={<RiskDetailPage />} />
         <Route path="issues/:id" element={<IssueDetailPage />} />
-        <Route path="service-desk" element={<ServiceDeskPage />} />
+
+        {/* Sites & surveys */}
+        <Route path="sites" element={<SitesPage />} />
+        <Route path="sites/:id" element={<SiteDetailPage />} />
+        <Route path="surveys" element={<SurveysPage />} />
+        <Route path="surveys/:id" element={<SurveyDetailPage />} />
+
+        {/* Operations */}
+        <Route path="work-packages" element={<WorkPackagesPage />} />
+        <Route path="assets" element={<AssetsPage />} />
+
+        {/* Admin */}
+        <Route path="audit" element={<AuditTrailPage />} />
         <Route
           path="clients"
           element={
@@ -96,5 +100,5 @@ export default function App() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-  );
+  )
 }

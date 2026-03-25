@@ -48,7 +48,6 @@ type RequestIntake = {
 }
 
 const SR_STATUSES = [
-  { value: "ALL", label: "All" },
   { value: "NEW", label: "New" },
   { value: "ASSIGNED", label: "Assigned" },
   { value: "IN_PROGRESS", label: "In progress" },
@@ -56,11 +55,12 @@ const SR_STATUSES = [
   { value: "COMPLETED", label: "Completed" },
   { value: "CLOSED", label: "Closed" },
   { value: "CANCELLED", label: "Cancelled" },
+  { value: "ALL", label: "All" },
 ]
 
 function ServiceRequestsView() {
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = React.useState("ALL")
+  const [activeTab, setActiveTab] = React.useState("NEW")
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["service-requests"],
@@ -97,7 +97,7 @@ function ServiceRequestsView() {
                 label={
                   <Stack direction="row" spacing={0.75} alignItems="center">
                     <span>{s.label}</span>
-                    {count > 0 ? (
+                    {count > 0 && s.value !== "ALL" ? (
                       <Box sx={{
                         bgcolor: activeTab === s.value ? "#1d4ed8" : "#e2e8f0",
                         color: activeTab === s.value ? "#fff" : "#475569",

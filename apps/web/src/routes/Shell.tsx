@@ -51,9 +51,8 @@ const sections: NavSection[] = [
   {
     title: "Service Desk",
     items: [
-      { label: "Service desk", path: "/service-desk", icon: <ConfirmationNumberIcon fontSize="small" />, roles: Object.values(ROLES) },
-      { label: "Risks", path: "/risks", icon: <ReportProblemIcon fontSize="small" />, roles: Object.values(ROLES) },
-      { label: "Issues", path: "/issues", icon: <WarningAmberIcon fontSize="small" />, roles: Object.values(ROLES) },
+      { label: "Service Desk", path: "/service-desk", icon: <ConfirmationNumberIcon fontSize="small" />, roles: Object.values(ROLES) },
+      { label: "Risks & Issues", path: "/risks", icon: <ReportProblemIcon fontSize="small" />, roles: Object.values(ROLES) },
     ]
   },
   {
