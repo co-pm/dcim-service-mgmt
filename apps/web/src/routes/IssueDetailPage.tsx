@@ -5,15 +5,14 @@ import { api } from "../lib/api"
 import {
   Alert, Box, Button, Card, CardContent, Chip, Dialog, DialogActions,
   DialogContent, DialogTitle, Divider, MenuItem, Stack, Tab, Tabs,
-  TextField, Tooltip, Typography
+  TextField, Typography
 } from "@mui/material"
 import ArrowBackIcon from "@mui/icons-material/ArrowBack"
 import LockIcon from "@mui/icons-material/Lock"
-import CheckIcon from "@mui/icons-material/Check"
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined"
 import {
   InfoField, Badge, DetailHeader, PropertiesPanel, LinkedEntitiesPanel,
-  chipSx, type LinkedTask
+  chipSx, type LinkedTask,
+  WorkflowStrip, type WorkflowStage
 } from "../components/shared"
 import { ErrorState, LoadingState } from "../components/PageState"
 import { hasAnyRole, ORG_SUPER_ROLES, ROLES } from "../lib/rbac"
@@ -276,100 +275,18 @@ export default function IssueDetailPage() {
       </Box>
 
       {/* Workflow strip */}
-      <Box sx={{
-        border: "0.5px solid var(--color-border-tertiary)",
-        borderTop: "none",
-        borderBottomLeftRadius: 8, borderBottomRightRadius: 8,
-        bgcolor: "var(--color-background-primary)",
-        px: 2.5, pt: 1.5, pb: 2, mb: 3
-      }}>
-        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1.5 }}>
-          <Typography sx={{
-            fontSize: 10, fontWeight: 700, letterSpacing: "0.07em",
-            color: "var(--color-text-tertiary)"
-          }}>
-            STATUS
-          </Typography>
-          <Tooltip
-            title="Click an available stage to transition this record. Stages shown in blue are available next steps."
-            placement="right" arrow
-          >
-            <InfoOutlinedIcon sx={{ fontSize: 13, color: "var(--color-text-tertiary)", cursor: "help" }} />
-          </Tooltip>
-        </Stack>
-        <Stack direction="row" spacing={0} alignItems="stretch">
-          {STATUS_ALL.map((status, idx) => {
-            const isCurrent = status === issue.status
-            const isPast = idx < currentIndex
-            const isNext = nextStatuses.includes(status) && canManage
-            return (
-              <React.Fragment key={status}>
-                <Tooltip title={STATUS_DESCRIPTIONS[status]} placement="bottom" arrow>
-                  <Box
-                    onClick={isNext ? () => setTransitionTarget(status) : undefined}
-                    sx={{
-                      flex: 1, px: 1.5, py: 1.25, borderRadius: 1.5,
-                      cursor: isNext ? "pointer" : "default",
-                      bgcolor: isCurrent ? "#0f172a"
-                        : isPast ? "#f1f5f9"
-                        : isNext ? "#eff6ff"
-                        : "transparent",
-                      border: "1px solid",
-                      borderColor: isCurrent ? "#0f172a"
-                        : isPast ? "var(--color-border-tertiary)"
-                        : isNext ? "#bfdbfe"
-                        : "transparent",
-                      transition: "all 0.15s",
-                      "&:hover": isNext ? { bgcolor: "#dbeafe", borderColor: "#93c5fd" } : {}
-                    }}
-                  >
-                    <Stack direction="row" spacing={0.75} alignItems="center">
-                      {isCurrent ? (
-                        <Box sx={{
-                          width: 16, height: 16, borderRadius: "50%", bgcolor: "#fff",
-                          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
-                        }}>
-                          <CheckIcon sx={{ fontSize: 11, color: "#0f172a" }} />
-                        </Box>
-                      ) : isPast ? (
-                        <Box sx={{
-                          width: 16, height: 16, borderRadius: "50%", bgcolor: "#cbd5e1",
-                          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
-                        }}>
-                          <CheckIcon sx={{ fontSize: 11, color: "#fff" }} />
-                        </Box>
-                      ) : (
-                        <Box sx={{
-                          width: 16, height: 16, borderRadius: "50%",
-                          border: isNext ? "1.5px solid #3b82f6" : "1.5px solid #e2e8f0",
-                          flexShrink: 0
-                        }} />
-                      )}
-                      <Typography sx={{
-                        fontSize: 12, fontWeight: isCurrent ? 700 : 500,
-                        color: isCurrent ? "#fff"
-                          : isPast ? "#94a3b8"
-                          : isNext ? "#1d4ed8"
-                          : "var(--color-text-tertiary)"
-                      }}>
-                        {STATUS_LABELS[status]}
-                      </Typography>
-                    </Stack>
-                  </Box>
-                </Tooltip>
-                {idx < STATUS_ALL.length - 1 ? (
-                  <Box sx={{
-                    width: 20, display: "flex", alignItems: "center",
-                    justifyContent: "center", flexShrink: 0
-                  }}>
-                    <Box sx={{ width: 12, height: 1, bgcolor: "var(--color-border-tertiary)" }} />
-                  </Box>
-                ) : null}
-              </React.Fragment>
-            )
-          })}
-        </Stack>
-      </Box>
+      <WorkflowStrip
+        stages={STATUS_ALL.map(s => ({
+          id: s,
+          label: STATUS_LABELS[s],
+          description: STATUS_DESCRIPTIONS[s]
+        }))}
+        currentStage={issue.status}
+        nextStages={nextStatuses}
+        onTransition={setTransitionTarget}
+        canTransition={canManage}
+        specialStageColors={{ RESOLVED: "#14532d", CLOSED: "#14532d" }}
+      />
 
       {error ? <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert> : null}
 

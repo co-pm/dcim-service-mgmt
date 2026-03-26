@@ -5,15 +5,14 @@ import { api } from "../lib/api"
 import {
   Alert, Box, Button, Card, CardContent, Chip, Dialog, DialogActions,
   DialogContent, DialogTitle, Divider, MenuItem, Stack, Tab, Tabs,
-  TextField, Tooltip, Typography
+  TextField, Typography
 } from "@mui/material"
 import ArrowBackIcon from "@mui/icons-material/ArrowBack"
-import CheckIcon from "@mui/icons-material/Check"
 import WarningAmberIcon from "@mui/icons-material/WarningAmber"
 import AddIcon from "@mui/icons-material/Add"
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined"
 import {
-  InfoField, Badge, DetailHeader, PropertiesPanel, chipSx
+  InfoField, Badge, DetailHeader, PropertiesPanel, chipSx,
+  WorkflowStrip, type WorkflowStage
 } from "../components/shared"
 import { ErrorState, LoadingState } from "../components/PageState"
 import { hasAnyRole, ORG_SUPER_ROLES, ROLES } from "../lib/rbac"
@@ -472,85 +471,14 @@ export default function CheckDetailPage() {
       </Box>
 
       {/* Workflow strip */}
-      <Box sx={{
-        border: "0.5px solid var(--color-border-tertiary)",
-        borderTop: "none",
-        borderBottomLeftRadius: 8, borderBottomRightRadius: 8,
-        bgcolor: "var(--color-background-primary)",
-        px: 2.5, pt: 1.5, pb: 2, mb: 3
-      }}>
-        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1.5 }}>
-          <Typography sx={{
-            fontSize: 10, fontWeight: 700, letterSpacing: "0.07em",
-            color: "var(--color-text-tertiary)"
-          }}>
-            STATUS
-          </Typography>
-          <Tooltip
-            title="Use the action buttons above to transition this check through its lifecycle."
-            placement="right" arrow
-          >
-            <InfoOutlinedIcon sx={{ fontSize: 13, color: "var(--color-text-tertiary)", cursor: "help" }} />
-          </Tooltip>
-        </Stack>
-        <Stack direction="row" spacing={0} alignItems="stretch">
-          {STATUS_ALL.map((status, idx) => {
-            const isCurrent = status === check.status
-            const isPast = idx < currentIndex
-            return (
-              <React.Fragment key={status}>
-                <Tooltip title={STATUS_DESCRIPTIONS[status]} placement="bottom" arrow>
-                  <Box sx={{
-                    flex: 1, px: 1.25, py: 1.25, borderRadius: 1.5,
-                    bgcolor: isCurrent ? "#0f172a" : isPast ? "#f1f5f9" : "transparent",
-                    border: "1px solid",
-                    borderColor: isCurrent ? "#0f172a"
-                      : isPast ? "var(--color-border-tertiary)"
-                      : "transparent"
-                  }}>
-                    <Stack direction="row" spacing={0.5} alignItems="center">
-                      {isCurrent ? (
-                        <Box sx={{
-                          width: 14, height: 14, borderRadius: "50%", bgcolor: "#fff",
-                          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
-                        }}>
-                          <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#0f172a" }} />
-                        </Box>
-                      ) : isPast ? (
-                        <Box sx={{
-                          width: 14, height: 14, borderRadius: "50%", bgcolor: "#cbd5e1",
-                          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
-                        }}>
-                          <CheckIcon sx={{ fontSize: 10, color: "#fff" }} />
-                        </Box>
-                      ) : (
-                        <Box sx={{
-                          width: 14, height: 14, borderRadius: "50%",
-                          border: "1.5px solid #e2e8f0", flexShrink: 0
-                        }} />
-                      )}
-                      <Typography sx={{
-                        fontSize: 11, fontWeight: isCurrent ? 700 : 500,
-                        color: isCurrent ? "#fff" : isPast ? "#94a3b8" : "var(--color-text-tertiary)"
-                      }}>
-                        {STATUS_LABELS[status]}
-                      </Typography>
-                    </Stack>
-                  </Box>
-                </Tooltip>
-                {idx < STATUS_ALL.length - 1 ? (
-                  <Box sx={{
-                    width: 16, display: "flex", alignItems: "center",
-                    justifyContent: "center", flexShrink: 0
-                  }}>
-                    <Box sx={{ width: 10, height: 1, bgcolor: "var(--color-border-tertiary)" }} />
-                  </Box>
-                ) : null}
-              </React.Fragment>
-            )
-          })}
-        </Stack>
-      </Box>
+      <WorkflowStrip
+        stages={STATUS_ALL.map(s => ({
+          id: s,
+          label: STATUS_LABELS[s],
+          description: STATUS_DESCRIPTIONS[s]
+        }))}
+        currentStage={check.status}
+      />
 
       {error ? <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert> : null}
 
