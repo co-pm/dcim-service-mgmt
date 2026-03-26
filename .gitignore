@@ -31,3 +31,6 @@ miniadata/
 
 # Prisma
 prisma/dev.db
+.claude
+.claude
+CLAUDE.md
