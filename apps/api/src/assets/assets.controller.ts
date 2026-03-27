@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Headers, Param, Post, Req } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Headers, Param, Post, Query, Req, Res } from "@nestjs/common"
+import type { Response } from "express"
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { AssetsService } from "./assets.service";
 import { CreateAssetDto } from "./dto";
@@ -54,4 +55,46 @@ export class AssetsController {
     const clientId = await resolveClientScope(user, requestedClientId, this.prisma);
     return this.assets.removeForClient(id, clientId, user.role);
   }
+
+  @Get("site/:siteId")
+  @Roles(Role.ORG_OWNER, Role.ORG_ADMIN, Role.ADMIN, Role.SERVICE_MANAGER, Role.SERVICE_DESK_ANALYST, Role.ENGINEER, Role.CLIENT_VIEWER)
+  async listForSite(
+    @Req() req: any,
+    @Param("siteId") siteId: string,
+    @Headers("x-client-id") requestedClientId?: string
+  ) {
+    const user = getJwtUser(req)
+    const clientId = await resolveClientScope(user, requestedClientId, this.prisma)
+    return this.assets.getForSite(clientId, siteId)
+  }
+
+  @Get("site/:siteId/export")
+  @Roles(Role.ORG_OWNER, Role.ORG_ADMIN, Role.ADMIN, Role.SERVICE_MANAGER, Role.SERVICE_DESK_ANALYST)
+  async exportCsv(
+    @Req() req: any,
+    @Param("siteId") siteId: string,
+    @Res() res: Response,
+    @Headers("x-client-id") requestedClientId?: string
+  ) {
+    const user = getJwtUser(req)
+    const clientId = await resolveClientScope(user, requestedClientId, this.prisma)
+    const csv = await this.assets.exportToCsv(clientId, siteId)
+    res.setHeader("Content-Type", "text/csv")
+    res.setHeader("Content-Disposition", `attachment; filename="assets-${siteId}.csv"`)
+    res.send(csv)
+  }
+
+  @Post("site/:siteId/import")
+  @Roles(Role.ORG_OWNER, Role.ORG_ADMIN, Role.ADMIN, Role.SERVICE_MANAGER, Role.SERVICE_DESK_ANALYST)
+  async importCsv(
+    @Req() req: any,
+    @Param("siteId") siteId: string,
+    @Body() body: { rows: any[] },
+    @Headers("x-client-id") requestedClientId?: string
+  ) {
+    const user = getJwtUser(req)
+    const clientId = await resolveClientScope(user, requestedClientId, this.prisma)
+    return this.assets.importFromCsv(clientId, siteId, body.rows, user.userId)
+  }
+
 }

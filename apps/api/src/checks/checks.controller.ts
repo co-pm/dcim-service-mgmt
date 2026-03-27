@@ -240,4 +240,17 @@ export class ChecksController {
     const clientId = await resolveClientScope(user, requestedClientId, this.prisma)
     return this.checks.createFollowOn(clientId, id, itemId, dto, user.userId)
   }
+
+  @Put("templates/:id")
+  @Roles(Role.ORG_OWNER, Role.ORG_ADMIN, Role.ADMIN, Role.SERVICE_MANAGER)
+  async updateTemplate(
+    @Req() req: any,
+    @Param("id") id: string,
+    @Body() dto: any,
+    @Headers("x-client-id") requestedClientId?: string
+  ) {
+    const user = getJwtUser(req)
+    const clientId = await resolveClientScope(user, requestedClientId, this.prisma)
+    return this.checks.updateTemplate(clientId, id, dto)
+  }
 }

@@ -12,7 +12,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack"
 import LocationOnIcon from "@mui/icons-material/LocationOn"
 import { EmptyState, ErrorState, LoadingState } from "../components/PageState"
 import { hasAnyRole, ORG_SUPER_ROLES, ROLES } from "../lib/rbac"
-import { statusChipSx } from "../lib/ui"
+import { chipSx } from "../components/shared"
 import { CreateTaskModal } from "./TasksPage"
 
 type Cabinet = {
@@ -32,6 +32,7 @@ type Asset = {
   assetType: string
   ownerType: string
   status: string
+  lifecycleState: string | null
   manufacturer: string | null
   modelNumber: string | null
   serialNumber: string | null
@@ -44,13 +45,16 @@ type Asset = {
   location: string | null
 }
 
-type Survey = {
+type Check = {
   id: string
+  reference: string
   title: string
-  surveyType: string
+  checkType: string
   status: string
   scheduledAt: string | null
+  passRate: number | null
   createdAt: string
+  assignee: { id: string; email: string } | null
 }
 
 type Site = {
@@ -64,7 +68,7 @@ type Site = {
   createdAt: string
   cabinets: Cabinet[]
   assets: Asset[]
-  surveys: Survey[]
+  checks: Check[]
 }
 
 function statusColor(status: string) {
@@ -106,6 +110,13 @@ export default function SiteDetailPage() {
     const [assetNotes, setAssetNotes] = React.useState("")
     const [savingAsset, setSavingAsset] = React.useState(false)
     const [taskOpen, setTaskOpen] = React.useState(false)
+  const [importOpen, setImportOpen] = React.useState(false)
+  const [importFile, setImportFile] = React.useState<File | null>(null)
+  const [importing, setImporting] = React.useState(false)
+  const [importResult, setImportResult] = React.useState<{
+    created: number; updated: number; skipped: number; errors: string[]
+  } | null>(null)
+  const [dragOver, setDragOver] = React.useState(false)
 
   // Cabinet modal state
   const [cabinetOpen, setCabinetOpen] = React.useState(false)
@@ -170,6 +181,48 @@ export default function SiteDetailPage() {
     }
   }
 
+  async function handleExport() {
+    try {
+      const response = await api.get(`/assets/site/${id}/export`, {
+        responseType: "blob"
+      })
+      const url = URL.createObjectURL(new Blob([response.data]))
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `assets-${site.name}-${new Date().toISOString().split("T")[0]}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e: any) {
+      setError("Failed to export assets")
+    }
+  }
+
+  async function handleImport() {
+    if (!importFile) return
+    setImporting(true)
+    setImportResult(null)
+    setError("")
+    try {
+      const text = await importFile.text()
+      const lines = text.trim().split("\n").filter(l => l.trim())
+      const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""))
+      const rows = lines.slice(1).map(line => {
+        const values = line.match(/(".*?"|[^,]+)(?=,|$)/g) ?? []
+        return Object.fromEntries(
+          headers.map((h, i) => [h, (values[i] ?? "").replace(/^"|"$/g, "").trim()])
+        )
+      }).filter(row => Object.values(row).some(v => v !== ""))
+      const result = await api.post(`/assets/site/${id}/import`, { rows })
+      setImportResult(result.data)
+      qc.invalidateQueries({ queryKey: ["site-detail", id] })
+      qc.invalidateQueries({ queryKey: ["assets"] })
+    } catch (e: any) {
+      setError(Array.isArray(e?.message) ? e.message.join(", ") : e?.message ?? "Import failed")
+    } finally {
+      setImporting(false)
+    }
+  }
+
   async function handleAddCabinet() {
     if (!cabinetName.trim()) return
     setSavingCabinet(true)
@@ -198,11 +251,11 @@ export default function SiteDetailPage() {
     <Box>
       <Button
         startIcon={<ArrowBackIcon />}
-        onClick={() => fromTask ? navigate(`/tasks/${fromTask}`) : navigate("/service-requests")}
+        onClick={() => fromTask ? navigate(`/tasks/${fromTask}`) : navigate("/sites")}
         sx={{ mb: 2, color: "text.secondary" }}
         size="small"
       >
-        {fromTask ? `Back to task ${fromTaskRef}` : "Back to service requests"}
+        {fromTask ? `Back to task ${fromTaskRef}` : "Back to sites"}
       </Button>
 
       {/* Header */}
@@ -221,8 +274,9 @@ export default function SiteDetailPage() {
             onClick={() => setTaskOpen(true)}>
             Create task
           </Button>
-          <Button variant="outlined" size="small" disabled>
-            Create survey
+          <Button variant="outlined" size="small"
+            onClick={() => navigate("/checks")}>
+            Schedule check
           </Button>
           {tab === 0 && canManage ? (
             <Button variant="contained" size="small" onClick={() => setAssetOpen(true)}>
@@ -244,13 +298,37 @@ export default function SiteDetailPage() {
         sx={{ mb: 2, borderBottom: "1px solid #e2e8f0" }}>
         <Tab label={`Assets (${site.assets.length})`} />
         <Tab label={`Cabinets (${site.cabinets.length})`} />
-        <Tab label={`Surveys (${site.surveys.length})`} />
+        <Tab label={`Engineering Checks (${site.checks.length})`} />
       </Tabs>
 
       {/* Assets tab */}
       {tab === 0 ? (
         <Card>
           <CardContent>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+              <Typography sx={{
+                fontSize: 10, fontWeight: 700, letterSpacing: "0.07em",
+                color: "var(--color-text-tertiary)"
+              }}>
+                ASSETS — {site.assets.length}
+              </Typography>
+              {canManage ? (
+                <Stack direction="row" spacing={1}>
+                  <Button size="small" variant="outlined"
+                    onClick={() => setImportOpen(true)}>
+                    Import CSV
+                  </Button>
+                  <Button size="small" variant="outlined"
+                    onClick={handleExport}>
+                    Export CSV
+                  </Button>
+                  <Button size="small" variant="contained"
+                    onClick={() => setAssetOpen(true)}>
+                    Add asset
+                  </Button>
+                </Stack>
+              ) : null}
+            </Stack>
             {site.assets.length === 0 ? (
               <EmptyState title="No assets at this site"
                 detail="Add an asset to start tracking infrastructure here." />
@@ -258,49 +336,56 @@ export default function SiteDetailPage() {
               <TableContainer>
                 <Table>
                   <TableHead>
-                        <TableRow>
-                            <TableCell>Asset tag</TableCell>
-                            <TableCell>Name</TableCell>
-                            <TableCell>Type</TableCell>
-                            <TableCell>Manufacturer</TableCell>
-                            <TableCell>Serial</TableCell>
-                            <TableCell>IP</TableCell>
-                            <TableCell>U pos</TableCell>
-                            <TableCell>Status</TableCell>
-                            {canManage ? <TableCell align="right">Action</TableCell> : null}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
+                    <TableRow>
+                      <TableCell>Asset tag</TableCell>
+                      <TableCell>Name</TableCell>
+                      <TableCell>Type</TableCell>
+                      <TableCell>Manufacturer</TableCell>
+                      <TableCell>Serial</TableCell>
+                      <TableCell>IP</TableCell>
+                      <TableCell>U pos</TableCell>
+                      <TableCell>Status</TableCell>
+                      {canManage ? <TableCell align="right">Action</TableCell> : null}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
                     {site.assets.map((a) => (
-                        <TableRow key={a.id} hover>
+                      <TableRow key={a.id} hover>
                         <TableCell sx={{ fontWeight: 700, fontFamily: "monospace" }}>
-                            {a.assetTag}
+                          {a.assetTag}
                         </TableCell>
                         <TableCell>{a.name}</TableCell>
                         <TableCell>{a.assetType}</TableCell>
                         <TableCell>{a.manufacturer ?? "—"}</TableCell>
                         <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>
-                            {a.serialNumber ?? "—"}
+                          {a.serialNumber ?? "—"}
                         </TableCell>
                         <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>
-                            {a.ipAddress ?? "—"}
+                          {a.ipAddress ?? "—"}
                         </TableCell>
                         <TableCell>{a.uPosition != null ? `U${a.uPosition}` : "—"}</TableCell>
                         <TableCell>
-                            <Chip size="small" sx={statusColor(a.status)}
-                            label={a.status.toLowerCase().replace("_", " ")} />
+                          <Stack direction="row" spacing={0.5}>
+                            <Chip size="small" sx={chipSx(a.status)}
+                              label={a.status.toLowerCase().replace("_", " ")} />
+                            {a.lifecycleState && a.lifecycleState !== "ACTIVE" ? (
+                              <Chip size="small"
+                                sx={{ bgcolor: "#f1f5f9", color: "#475569", fontSize: 10 }}
+                                label={a.lifecycleState.toLowerCase()} />
+                            ) : null}
+                          </Stack>
                         </TableCell>
                         {canManage ? (
-                            <TableCell align="right">
+                          <TableCell align="right">
                             <Button size="small" color="error" variant="outlined"
-                                onClick={() => setDeleteAsset(a)}>
-                                Delete
+                              onClick={() => setDeleteAsset(a)}>
+                              Delete
                             </Button>
-                            </TableCell>
+                          </TableCell>
                         ) : null}
-                        </TableRow>
+                      </TableRow>
                     ))}
-                    </TableBody>
+                  </TableBody>
                 </Table>
               </TableContainer>
             )}
@@ -347,43 +432,79 @@ export default function SiteDetailPage() {
         </Card>
       ) : null}
 
-      {/* Surveys tab */}
+      {/* Engineering Checks tab */}
       {tab === 2 ? (
         <Card>
           <CardContent>
-            {site.surveys.length === 0 ? (
-              <EmptyState title="No surveys at this site"
-                detail="Surveys conducted at this site will appear here." />
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+              <Typography sx={{
+                fontSize: 10, fontWeight: 700, letterSpacing: "0.07em",
+                color: "var(--color-text-tertiary)"
+              }}>
+                ENGINEERING CHECKS
+              </Typography>
+              {canManage ? (
+                <Button size="small" variant="outlined"
+                  onClick={() => navigate("/checks", { state: { siteId: site.id } })}>
+                  Schedule check
+                </Button>
+              ) : null}
+            </Stack>
+            {site.checks.length === 0 ? (
+              <EmptyState title="No checks at this site"
+                detail="Engineering checks scheduled at this site will appear here." />
             ) : (
               <TableContainer>
                 <Table>
                   <TableHead>
                     <TableRow>
+                      <TableCell>Reference</TableCell>
                       <TableCell>Title</TableCell>
                       <TableCell>Type</TableCell>
                       <TableCell>Status</TableCell>
+                      <TableCell>Pass rate</TableCell>
                       <TableCell>Scheduled</TableCell>
-                      <TableCell>Created</TableCell>
+                      <TableCell>Assignee</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {site.surveys.map((s) => (
-                      <TableRow key={s.id} hover
-                        onClick={() => navigate(`/surveys/${s.id}`)}
+                    {site.checks.map((c) => (
+                      <TableRow key={c.id} hover
+                        onClick={() => navigate(`/checks/${c.id}`)}
                         sx={{ cursor: "pointer" }}>
-                        <TableCell sx={{ fontWeight: 600 }}>{s.title}</TableCell>
-                        <TableCell>{s.surveyType}</TableCell>
-                        <TableCell>
-                          <Chip size="small" sx={statusChipSx(s.status)}
-                            label={s.status.toLowerCase()} />
+                        <TableCell sx={{ fontWeight: 700, fontFamily: "monospace", fontSize: 12 }}>
+                          {c.reference}
                         </TableCell>
                         <TableCell>
-                          {s.scheduledAt
-                            ? new Date(s.scheduledAt).toLocaleDateString("en-GB")
-                            : "—"}
+                          <Typography variant="body2" fontWeight={600}>{c.title}</Typography>
                         </TableCell>
                         <TableCell>
-                          {new Date(s.createdAt).toLocaleDateString("en-GB")}
+                          <Typography variant="caption" color="text.secondary">{c.checkType}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip size="small" sx={chipSx(c.status)}
+                            label={c.status.toLowerCase().replace("_", " ")} />
+                        </TableCell>
+                        <TableCell>
+                          {c.passRate !== null ? (
+                            <Chip size="small"
+                              sx={chipSx(c.passRate >= 80 ? "COMPLETED" : c.passRate >= 60 ? "AMBER" : "FAIL")}
+                              label={`${c.passRate}%`} />
+                          ) : (
+                            <Typography variant="caption" color="text.secondary">—</Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="caption" color="text.secondary">
+                            {c.scheduledAt
+                              ? new Date(c.scheduledAt).toLocaleDateString("en-GB")
+                              : "—"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="caption" color="text.secondary">
+                            {c.assignee?.email.split("@")[0] ?? "Unassigned"}
+                          </Typography>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -511,6 +632,190 @@ export default function SiteDetailPage() {
         linkedEntityId={site.id}
         linkedEntityLabel={site.name}
       />
+
+      <Dialog open={importOpen} onClose={() => {
+        if (importing) return
+        setImportOpen(false)
+        setImportFile(null)
+        setImportResult(null)
+        setError("")
+      }} maxWidth="sm" fullWidth>
+        <DialogTitle>Import assets from Hyperview</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 0.5 }}>
+
+            {/* Info banner */}
+            <Box sx={{
+              p: 1.5, borderRadius: 1.5,
+              bgcolor: "#eff6ff", border: "1px solid #bfdbfe"
+            }}>
+              <Typography variant="caption" color="#1d4ed8" fontWeight={600} sx={{ display: "block", mb: 0.5 }}>
+                Hyperview — Contained Assets export
+              </Typography>
+              <Typography variant="caption" color="#1d4ed8">
+                Export from Hyperview using <strong>Assets → Contained Assets → Export CSV</strong>.
+                Assets are matched by Asset ID then Serial Number. Existing records are updated,
+                new records are created.
+              </Typography>
+            </Box>
+
+            {/* Drop zone */}
+            {!importResult ? (
+              <Box
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  setDragOver(false)
+                  const file = e.dataTransfer.files[0]
+                  if (file && (file.name.endsWith(".csv") || file.name.endsWith(".xlsx"))) {
+                    setImportFile(file)
+                  } else {
+                    setError("Please drop a CSV file")
+                  }
+                }}
+                onClick={() => {
+                  const input = document.createElement("input")
+                  input.type = "file"
+                  input.accept = ".csv"
+                  input.onchange = (e: any) => {
+                    const file = e.target.files?.[0]
+                    if (file) setImportFile(file)
+                  }
+                  input.click()
+                }}
+                sx={{
+                  border: `2px dashed`,
+                  borderColor: dragOver ? "#3b82f6" : importFile ? "#22c55e" : "var(--color-border-tertiary)",
+                  borderRadius: 2,
+                  p: 4,
+                  textAlign: "center",
+                  cursor: "pointer",
+                  bgcolor: dragOver ? "#eff6ff"
+                    : importFile ? "#f0fdf4"
+                    : "var(--color-background-secondary)",
+                  transition: "all 0.15s",
+                  "&:hover": {
+                    borderColor: "#3b82f6",
+                    bgcolor: "#eff6ff"
+                  }
+                }}
+              >
+                {importFile ? (
+                  <Stack spacing={0.75} alignItems="center">
+                    <Box sx={{
+                      width: 40, height: 40, borderRadius: "50%",
+                      bgcolor: "#dcfce7", display: "flex",
+                      alignItems: "center", justifyContent: "center"
+                    }}>
+                      <Typography sx={{ fontSize: 18 }}>✓</Typography>
+                    </Box>
+                    <Typography variant="body2" fontWeight={600} color="#15803d">
+                      {importFile.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {(importFile.size / 1024).toFixed(1)} KB — click to change
+                    </Typography>
+                  </Stack>
+                ) : (
+                  <Stack spacing={0.75} alignItems="center">
+                    <Box sx={{
+                      width: 40, height: 40, borderRadius: "50%",
+                      bgcolor: "#f1f5f9", display: "flex",
+                      alignItems: "center", justifyContent: "center"
+                    }}>
+                      <Typography sx={{ fontSize: 18 }}>📄</Typography>
+                    </Box>
+                    <Typography variant="body2" fontWeight={600}>
+                      Drop CSV file here
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      or click to browse
+                    </Typography>
+                  </Stack>
+                )}
+              </Box>
+            ) : null}
+
+            {/* Result */}
+            {importResult ? (
+              <Box sx={{
+                p: 2, borderRadius: 1.5,
+                bgcolor: "#f0fdf4", border: "1px solid #bbf7d0"
+              }}>
+                <Typography variant="body2" fontWeight={700} color="#15803d" sx={{ mb: 1.5 }}>
+                  Import complete
+                </Typography>
+                <Stack direction="row" spacing={3}>
+                  <Box sx={{ textAlign: "center" }}>
+                    <Typography variant="h5" fontWeight={700} color="#15803d">
+                      {importResult.created}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">Created</Typography>
+                  </Box>
+                  <Box sx={{ textAlign: "center" }}>
+                    <Typography variant="h5" fontWeight={700} color="#0369a1">
+                      {importResult.updated}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">Updated</Typography>
+                  </Box>
+                  <Box sx={{ textAlign: "center" }}>
+                    <Typography variant="h5" fontWeight={700} color="#64748b">
+                      {importResult.skipped}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">Skipped</Typography>
+                  </Box>
+                </Stack>
+                {importResult.errors.length > 0 ? (
+                  <Box sx={{
+                    mt: 1.5, p: 1.25, borderRadius: 1,
+                    bgcolor: "#fef2f2", border: "1px solid #fecaca"
+                  }}>
+                    <Typography variant="caption" fontWeight={600} color="#b91c1c" sx={{ display: "block", mb: 0.5 }}>
+                      {importResult.errors.length} row error{importResult.errors.length > 1 ? "s" : ""}
+                    </Typography>
+                    {importResult.errors.slice(0, 5).map((e, i) => (
+                      <Typography key={i} variant="caption" color="#b91c1c" sx={{ display: "block" }}>
+                        {e}
+                      </Typography>
+                    ))}
+                  </Box>
+                ) : null}
+              </Box>
+            ) : null}
+
+            {error ? (
+              <Box sx={{ p: 1.25, borderRadius: 1.5, bgcolor: "#fef2f2", border: "1px solid #fecaca" }}>
+                <Typography variant="caption" color="#b91c1c">{error}</Typography>
+              </Box>
+            ) : null}
+
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setImportOpen(false)
+            setImportFile(null)
+            setImportResult(null)
+            setError("")
+          }} disabled={importing}>
+            {importResult ? "Close" : "Cancel"}
+          </Button>
+          {!importResult ? (
+            <Button variant="contained" onClick={handleImport}
+              disabled={importing || !importFile}>
+              {importing ? "Importing..." : "Import assets"}
+            </Button>
+          ) : (
+            <Button variant="outlined" onClick={() => {
+              setImportFile(null)
+              setImportResult(null)
+            }}>
+              Import another file
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

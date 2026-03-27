@@ -78,6 +78,14 @@ enum RequestIntakeStatus {
   REJECTED
 }
 
+enum AssetLifecycleState {
+  PLANNED
+  PROCUREMENT
+  STAGING
+  ACTIVE
+  RETIRED
+}
+
 model Client {
   id        String   @id @default(uuid())
   organizationId String?
@@ -336,7 +344,10 @@ model Asset {
   powerDrawW       Float?
   ipAddress        String?
   warrantyExpiry   DateTime?
-  lifecycleStatus  String?
+  lifecycleState    AssetLifecycleState @default(ACTIVE)
+  hyperviewAssetId  String?
+  rackSide          String?             @default("FRONT")
+  lastSyncedAt      DateTime?
   notes            String?
   locationType     String?
   locationArea     String?

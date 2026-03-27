@@ -64,7 +64,11 @@ export class CreateAssetDto {
 
   @IsOptional()
   @IsString()
-  lifecycleStatus?: string
+  lifecycleStatus?: string  // kept for backwards compat
+
+  @IsOptional()
+  @IsString()
+  lifecycleState?: string
 
   @IsOptional()
   @IsString()

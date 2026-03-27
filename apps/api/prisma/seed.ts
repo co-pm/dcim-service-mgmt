@@ -80,7 +80,7 @@ async function seedClientData(params: {
         cabinetId: cabinetA.id,
         location: "Rack A1",
         status: "ACTIVE",
-        lifecycleStatus: "PRODUCTION"
+        lifecycleState: "ACTIVE"
       },
       {
         assetTag: `CL-${code}-SWT-01`,
@@ -92,7 +92,7 @@ async function seedClientData(params: {
         cabinetId: cabinetA.id,
         location: "Rack A1",
         status: "ACTIVE",
-        lifecycleStatus: "PRODUCTION"
+        lifecycleState: "ACTIVE"
       }
     ],
     skipDuplicates: true
