@@ -17,6 +17,8 @@ import SitesPage from "./SitesPage"
 import SiteDetailPage from "./SiteDetailPage"
 import ChecksPage from "./ChecksPage"
 import CheckDetailPage from "./CheckDetailPage"
+import CheckTemplatesPage from "./CheckTemplatesPage"
+import CheckTemplateDetailPage from "./CheckTemplateDetailPage"
 import WorkPackagesPage from "./WorkPackagesPage"
 import AssetsPage from "./AssetsPage"
 import AuditTrailPage from "./AuditTrailPage"
@@ -74,6 +76,8 @@ export default function App() {
         <Route path="sites/:id" element={<SiteDetailPage />} />
         <Route path="checks" element={<ChecksPage />} />
         <Route path="checks/:id" element={<CheckDetailPage />} />
+        <Route path="check-templates" element={<CheckTemplatesPage />} />
+        <Route path="check-templates/:id" element={<CheckTemplateDetailPage />} />
 
         {/* Operations */}
         <Route path="work-packages" element={<WorkPackagesPage />} />

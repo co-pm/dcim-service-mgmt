@@ -21,7 +21,7 @@ type Site = {
   postcode: string | null
   country: string
   notes: string | null
-  _count: { assets: number; surveys: number }
+  _count: { assets: number; checks: number }
   cabinets: { id: string }[]
 }
 
@@ -78,7 +78,7 @@ export default function SitesPage() {
       {error ? <ErrorState title="Failed to load sites" /> : null}
       {!isLoading && !error && (data?.length ?? 0) === 0 ? (
         <EmptyState title="No sites yet"
-          detail="Add a site to start tracking assets, cabinets and surveys." />
+          detail="Add a site to start tracking assets, cabinets and checks." />
       ) : null}
 
       <Grid container spacing={2}>
@@ -138,7 +138,7 @@ export default function SitesPage() {
                   <Stack direction="row" spacing={0.5} alignItems="center">
                     <FactCheckIcon sx={{ fontSize: 14, color: "text.secondary" }} />
                     <Typography variant="caption" color="text.secondary">
-                      {site._count.surveys} surveys
+                      {site._count.checks} checks
                     </Typography>
                   </Stack>
                 </Stack>

@@ -423,4 +423,19 @@ export class ChecksService {
       orderBy: { createdAt: "asc" }
     })
   }
+
+  async updateTemplate(clientId: string, id: string, dto: any) {
+    this.assertClientScope(clientId)
+    const template = await this.getTemplate(clientId, id)
+    return this.prisma.checkTemplate.update({
+      where: { id: template.id },
+      data: {
+        name: dto.name ?? template.name,
+        description: dto.description ?? template.description,
+        estimatedMinutes: dto.estimatedMinutes ?? template.estimatedMinutes
+      },
+      include: { items: { orderBy: { sortOrder: "asc" } } }
+    })
+  }
+
 }

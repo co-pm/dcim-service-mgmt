@@ -28,7 +28,13 @@ export class SitesService {
       include: {
         cabinets: true,
         assets: { orderBy: { name: "asc" } },
-        checks: { orderBy: { createdAt: "desc" }, take: 10 }
+        checks: {
+          orderBy: { createdAt: "desc" },
+          take: 20,
+          include: {
+            assignee: { select: { id: true, email: true } }
+          }
+        }
       }
     })
     if (!site) throw new NotFoundException("Site not found")

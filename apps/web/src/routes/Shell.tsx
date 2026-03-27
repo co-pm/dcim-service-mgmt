@@ -26,6 +26,7 @@ import { api, revokeAndLogout } from "../lib/api"
 import { getCurrentUser } from "../lib/auth"
 import { hasAnyRole, ORG_SUPER_ROLES, ROLES } from "../lib/rbac"
 import { getSelectedClientId, setSelectedClientId } from "../lib/scope"
+import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck"
 
 const drawerWidth = 220
 
@@ -60,6 +61,7 @@ const sections: NavSection[] = [
     items: [
       { label: "Sites", path: "/sites", icon: <LocationOnIcon fontSize="small" />, roles: Object.values(ROLES) },
       { label: "Engineering Checks", path: "/checks", icon: <FactCheckIcon fontSize="small" />, roles: Object.values(ROLES) },
+      { label: "Check Templates", path: "/check-templates", icon: <PlaylistAddCheckIcon fontSize="small" />, roles: [...ORG_SUPER_ROLES, ROLES.SERVICE_MANAGER] },
       { label: "Service Scope", path: "/work-packages", icon: <WorkIcon fontSize="small" />, roles: Object.values(ROLES) },
       { label: "Tasks", path: "/tasks", icon: <TaskAltIcon fontSize="small" />, roles: Object.values(ROLES) },
     ]
