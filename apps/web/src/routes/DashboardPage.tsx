@@ -23,6 +23,9 @@ import InsightsIcon from "@mui/icons-material/Insights";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import { ErrorState, LoadingState } from "../components/PageState";
 import { hasAnyRole, ORG_SUPER_ROLES, ROLES } from "../lib/rbac";
+import { useNavigate } from "react-router-dom"
+import { getCurrentUser } from "../lib/auth"
+import { chipSx } from "../components/shared"
 
 type Assignee = { id: string; email: string };
 
@@ -54,7 +57,7 @@ type Task = {
 };
 
 type Asset = { id: string };
-type Survey = { id: string; status: string };
+type Check = { id: string; status: string; assigneeId?: string | null };
 type TriageItem = { id: string; status: string };
 
 type TrendMetric = {
@@ -140,6 +143,157 @@ function getDateRangeFromPreset(preset: "7d" | "30d" | "90d" | "ytd") {
   return { from: formatDateForInput(fromDate), to };
 }
 
+function MyWorkSection() {
+  const navigate = useNavigate()
+  const currentUser = getCurrentUser()
+
+  const myChecks = useQuery({
+    queryKey: ["my-checks"],
+    queryFn: async () => {
+      const all = (await api.get<any[]>("/checks")).data
+      return all.filter((c: any) =>
+        c.assigneeId === currentUser?.userId &&
+        ["ASSIGNED", "IN_PROGRESS", "PENDING_REVIEW"].includes(c.status)
+      )
+    }
+  })
+
+  const myTasks = useQuery({
+    queryKey: ["my-tasks"],
+    queryFn: async () => {
+      const all = (await api.get<any[]>("/tasks")).data
+      return all.filter((t: any) =>
+        t.assigneeId === currentUser?.userId &&
+        t.status !== "DONE"
+      )
+    }
+  })
+
+  const hasWork = (myChecks.data?.length ?? 0) > 0 || (myTasks.data?.length ?? 0) > 0
+  if (!hasWork && !myChecks.isLoading && !myTasks.isLoading) return null
+
+  return (
+    <Box sx={{ mt: 3 }}>
+      <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1.5 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1e293b" }}>
+          My Work
+        </Typography>
+        <Chip label="Assigned to you" size="small"
+          sx={{ bgcolor: "#f1f5f9", color: "#475569", fontWeight: 600 }} />
+      </Stack>
+      <Grid container spacing={2}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+                <Typography sx={{
+                  fontSize: 10, fontWeight: 700, letterSpacing: "0.07em",
+                  color: "var(--color-text-tertiary)"
+                }}>
+                  ENGINEERING CHECKS
+                </Typography>
+                <Button size="small" onClick={() => navigate("/checks")}>View all</Button>
+              </Stack>
+              {myChecks.isLoading ? <LoadingState /> : null}
+              {(myChecks.data?.length ?? 0) === 0 && !myChecks.isLoading ? (
+                <Typography variant="body2" color="text.secondary">No checks assigned to you.</Typography>
+              ) : (
+                <Stack spacing={1}>
+                  {(myChecks.data ?? []).slice(0, 5).map((check: any) => (
+                    <Box key={check.id}
+                      onClick={() => navigate(`/checks/${check.id}`)}
+                      sx={{
+                        p: 1.25, borderRadius: 1.5, cursor: "pointer",
+                        border: "0.5px solid var(--color-border-tertiary)",
+                        bgcolor: "var(--color-background-secondary)",
+                        "&:hover": { bgcolor: "var(--color-background-primary)" }
+                      }}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography variant="body2" fontWeight={600} sx={{
+                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
+                          }}>
+                            {check.title}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {check.reference} · {check.site?.name ?? ""}
+                          </Typography>
+                        </Box>
+                        <Chip size="small"
+                          label={check.status.toLowerCase().replace(/_/g, " ")}
+                          sx={{ ml: 1, flexShrink: 0, ...chipSx(check.status) }} />
+                      </Stack>
+                    </Box>
+                  ))}
+                </Stack>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+                <Typography sx={{
+                  fontSize: 10, fontWeight: 700, letterSpacing: "0.07em",
+                  color: "var(--color-text-tertiary)"
+                }}>
+                  TASKS
+                </Typography>
+                <Button size="small" onClick={() => navigate("/tasks")}>View all</Button>
+              </Stack>
+              {myTasks.isLoading ? <LoadingState /> : null}
+              {(myTasks.data?.length ?? 0) === 0 && !myTasks.isLoading ? (
+                <Typography variant="body2" color="text.secondary">No tasks assigned to you.</Typography>
+              ) : (
+                <Stack spacing={1}>
+                  {(myTasks.data ?? []).slice(0, 5).map((task: any) => (
+                    <Box key={task.id}
+                      onClick={() => navigate(`/tasks/${task.id}`)}
+                      sx={{
+                        p: 1.25, borderRadius: 1.5, cursor: "pointer",
+                        border: "0.5px solid var(--color-border-tertiary)",
+                        bgcolor: "var(--color-background-secondary)",
+                        "&:hover": { bgcolor: "var(--color-background-primary)" }
+                      }}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography variant="body2" fontWeight={600} sx={{
+                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
+                          }}>
+                            {task.title}
+                          </Typography>
+                          <Stack direction="row" spacing={0.5} alignItems="center">
+                            <Typography variant="caption" color="text.secondary">
+                              {task.reference}
+                            </Typography>
+                            {task.dueAt ? (
+                              <Typography variant="caption" sx={{
+                                color: new Date(task.dueAt) < new Date() ? "#b91c1c" : "#64748b",
+                                fontWeight: new Date(task.dueAt) < new Date() ? 700 : 400
+                              }}>
+                                · Due {new Date(task.dueAt).toLocaleDateString("en-GB")}
+                              </Typography>
+                            ) : null}
+                          </Stack>
+                        </Box>
+                        <Chip size="small"
+                          label={task.status.toLowerCase().replace(/_/g, " ")}
+                          sx={{ ml: 1, flexShrink: 0, ...chipSx(task.status) }} />
+                      </Stack>
+                    </Box>
+                  ))}
+                </Stack>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    </Box>
+  )
+}
+
 export default function DashboardPage() {
   const canViewTriage = hasAnyRole([...ORG_SUPER_ROLES, ROLES.SERVICE_MANAGER, ROLES.SERVICE_DESK_ANALYST]);
   const defaultRange = getDateRangeFromPreset("30d");
@@ -165,9 +319,9 @@ export default function DashboardPage() {
     queryKey: ["assets"],
     queryFn: async () => (await api.get<Asset[]>("/assets")).data
   });
-  const surveys = useQuery({
-    queryKey: ["surveys"],
-    queryFn: async () => (await api.get<Survey[]>("/surveys")).data
+  const checks = useQuery({
+    queryKey: ["checks"],
+    queryFn: async () => (await api.get<Check[]>("/checks")).data
   });
   const triage = useQuery({
     queryKey: ["triage-queue"],
@@ -180,10 +334,10 @@ export default function DashboardPage() {
     incidents.isLoading ||
     tasks.isLoading ||
     assets.isLoading ||
-    surveys.isLoading ||
+    checks.isLoading ||
     (canViewTriage && triage.isLoading);
   const hasError =
-    srs.error || incidents.error || tasks.error || assets.error || surveys.error || (canViewTriage && triage.error);
+    srs.error || incidents.error || tasks.error || assets.error || checks.error || (canViewTriage && triage.error);
 
   const assignees = React.useMemo(() => {
     const byId = new Map<string, Assignee>();
@@ -219,7 +373,8 @@ export default function DashboardPage() {
   const openTasks = filteredTasks.filter(
     (x) => inDateRange(x.createdAt, dateFrom, dateTo) && !["DONE"].includes(x.status)
   ).length;
-  const activeSurveys = (surveys.data ?? []).filter((x) => x.status !== "COMPLETED").length;
+  const pendingReviewChecks = (checks.data ?? []).filter(x => x.status === "PENDING_REVIEW").length
+  const activeChecks = (checks.data ?? []).filter(x => ["IN_PROGRESS", "ASSIGNED", "SCHEDULED"].includes(x.status)).length
 
   const trendCards: TrendMetric[] = [
     { label: "Service Requests", opened: srTrend.opened, resolved: srTrend.resolved, tone: "#2563eb" },
@@ -235,7 +390,8 @@ export default function DashboardPage() {
     { label: "Open Incidents", value: openIncidents, tone: "#dc2626", description: "Active incident workload." },
     { label: "Open Tasks", value: openTasks, tone: "#0f766e", description: "Tasks still in progress." },
     { label: "Assets", value: assets.data?.length ?? 0, tone: "#0891b2", description: "Assets in current scope." },
-    { label: "Active Surveys", value: activeSurveys, tone: "#7c3aed", description: "Surveys not completed." }
+    { label: "Pending Review Checks", value: pendingReviewChecks, tone: "#f59e0b", description: "Checks awaiting review." },
+    { label: "Active Checks", value: activeChecks, tone: "#7c3aed", description: "Checks in progress." }
   ];
 
   function applyPreset(preset: "7d" | "30d" | "90d" | "ytd") {
@@ -540,6 +696,7 @@ export default function DashboardPage() {
           </Grid>
         </>
       ) : null}
+      <MyWorkSection />
     </Box>
-  );
+  )
 }
