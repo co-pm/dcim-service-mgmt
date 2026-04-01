@@ -561,6 +561,45 @@ async function main() {
     }
   })
 
+  // 4) Internal staff users
+  const internalUsers = [
+    {
+      email: "manager@dcm.local",
+      role: Role.SERVICE_MANAGER,
+      clientId: clientA.id
+    },
+    {
+      email: "analyst@dcm.local",
+      role: Role.SERVICE_DESK_ANALYST,
+      clientId: clientA.id
+    },
+    {
+      email: "engineer@dcm.local",
+      role: Role.ENGINEER,
+      clientId: clientA.id
+    },
+    {
+      email: "viewer@dcm.local",
+      role: Role.CLIENT_VIEWER,
+      clientId: clientA.id
+    }
+  ]
+
+  for (const u of internalUsers) {
+    await prisma.user.upsert({
+      where: { email: u.email },
+      update: { role: u.role, organizationId: organization.id, clientId: u.clientId },
+      create: {
+        email: u.email,
+        passwordHash: await bcrypt.hash("Admin123!", 10),
+        role: u.role,
+        organizationId: organization.id,
+        clientId: u.clientId,
+        isActive: true
+      }
+    })
+  }
+
   // 4) Global internal assets
   await prisma.asset.createMany({
     data: [

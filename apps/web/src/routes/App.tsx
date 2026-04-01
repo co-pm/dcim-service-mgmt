@@ -24,6 +24,8 @@ import AssetsPage from "./AssetsPage"
 import AuditTrailPage from "./AuditTrailPage"
 import UsersPage from "./UsersPage"
 import ClientsPage from "./ClientsPage"
+import MyWorkPage from "./MyWorkPage"
+import OverviewPage from "./OverviewPage"
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const token = getToken()
@@ -50,12 +52,24 @@ export default function App() {
           </RequireAuth>
         }
       >
-        <Route index element={<DashboardPage />} />
+        <Route index element={<MyWorkPage />} />
+        <Route path="dashboard" element={<DashboardPage />} />
 
         {/* Redirects for old routes */}
         <Route path="raise-request" element={<Navigate to="/service-desk" replace />} />
         <Route path="triage" element={<Navigate to="/service-desk" replace />} />
         <Route path="service-requests" element={<Navigate to="/service-desk" replace />} />
+
+        {/* My Work and Overview */}
+        <Route path="my-work" element={<MyWorkPage />} />
+        <Route
+          path="overview"
+          element={
+            <RequireRoles roles={[...ORG_SUPER_ROLES, ROLES.SERVICE_MANAGER]}>
+              <OverviewPage />
+            </RequireRoles>
+          }
+        />
 
         {/* Service desk */}
         <Route path="service-desk" element={<ServiceDeskPage />} />
