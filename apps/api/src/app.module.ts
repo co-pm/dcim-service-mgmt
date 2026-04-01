@@ -23,6 +23,7 @@ import { CommentsModule } from "./comments/comments.module"
 import { WorkPackagesModule } from "./work-packages/work-packages.module"
 import { CabinetsModule } from "./cabinets/cabinets.module"
 import { MyWorkModule } from "./my-work/my-work.module"
+import { OverviewModule } from "./overview/overview.module"
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { MyWorkModule } from "./my-work/my-work.module"
     WorkPackagesModule,
     MyWorkModule,
     CabinetsModule,
+    OverviewModule,
     UsersModule
   ],
   controllers: [HealthController]
